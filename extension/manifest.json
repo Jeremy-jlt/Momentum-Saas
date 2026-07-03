@@ -9,6 +9,16 @@
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess"
   ],
+  "host_permissions": ["*://*/*"],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "static_rules",
+        "enabled": false,
+        "path": "rules_static.json"
+      }
+    ]
+  },
   "background": {
     "service_worker": "background.js"
   },

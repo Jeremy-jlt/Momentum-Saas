@@ -55,38 +55,86 @@ function isWithinRange(nowMinutes, debut, fin) {
   return nowMinutes >= start || nowMinutes < end
 }
 
-async function applyBlockRules(domains) {
-  const existing = await chrome.declarativeNetRequest.getDynamicRules()
-  const removeRuleIds = existing.map((r) => r.id)
+// Enlève protocole / chemin / "www." pour obtenir un domaine nu utilisable dans un urlFilter
+function sanitizeDomain(domain) {
+  return domain
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/.*$/, '')
+    .trim()
+    .toLowerCase()
+}
 
-  const addRules = domains.map((domain, i) => ({
-    id: RULE_ID_BASE + i,
+function buildRule(domain, id) {
+  return {
+    id,
     priority: 1,
     action: {
       type: 'redirect',
       redirect: { extensionPath: '/blocked.html' },
     },
     condition: {
-      requestDomains: [domain],
+      urlFilter: `||${sanitizeDomain(domain)}`,
       resourceTypes: ['main_frame'],
     },
-  }))
-
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds,
-    addRules,
-  })
-}
-
-async function clearBlockRules() {
-  const existing = await chrome.declarativeNetRequest.getDynamicRules()
-  const removeRuleIds = existing.map((r) => r.id)
-  if (removeRuleIds.length > 0) {
-    await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds })
   }
 }
 
+// Source de vérité unique pour l'état des règles : toujours passer par ici,
+// jamais d'appel direct à updateDynamicRules ailleurs dans le fichier.
+async function applyBlockRules(domains) {
+  try {
+    const existing = await chrome.declarativeNetRequest.getDynamicRules()
+    const removeRuleIds = existing.map((r) => r.id)
+    const addRules = domains.map((domain, i) => buildRule(domain, RULE_ID_BASE + i))
+
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds,
+      addRules,
+    })
+
+    console.log(`[Momentum] Session démarrée, ${addRules.length} règles ajoutées`)
+    console.log('[Momentum] Règles mises à jour :', domains)
+
+    const verify = await chrome.declarativeNetRequest.getDynamicRules()
+    console.log(`[Momentum] Vérification : ${verify.length} règles actives dans declarativeNetRequest`)
+  } catch (err) {
+    console.error('[Momentum] Échec de la création des règles de blocage :', err)
+  }
+}
+
+async function clearBlockRules() {
+  try {
+    const existing = await chrome.declarativeNetRequest.getDynamicRules()
+    const removeRuleIds = existing.map((r) => r.id)
+    if (removeRuleIds.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds })
+    }
+    console.log('[Momentum] Session terminée, règles supprimées')
+  } catch (err) {
+    console.error('[Momentum] Échec de la suppression des règles de blocage :', err)
+  }
+}
+
+async function getActiveManualSession() {
+  const { momentum_active_session } = await chrome.storage.local.get('momentum_active_session')
+  if (momentum_active_session?.source === 'manual' && momentum_active_session.endsAt > Date.now()) {
+    return momentum_active_session
+  }
+  return null
+}
+
 async function syncWithSupabase() {
+  // Une session de test manuelle est prioritaire : la synchro Supabase ne doit
+  // jamais lui retirer ses règles tant qu'elle n'est pas terminée/arrêtée.
+  const manualSession = await getActiveManualSession()
+  if (manualSession) {
+    console.log(
+      `[Momentum] Sync ignorée : session manuelle active jusqu'à ${new Date(manualSession.endsAt).toLocaleTimeString()}`
+    )
+    return
+  }
+
   const auth = await getAuth()
   if (!auth || !auth.user?.id) {
     await clearBlockRules()
@@ -100,6 +148,7 @@ async function syncWithSupabase() {
       `engagements?user_id=eq.${auth.user.id}&statut=eq.en_cours&select=*`
     )
   } catch (err) {
+    console.error('[Momentum] Échec de récupération des engagements :', err)
     return
   }
 
