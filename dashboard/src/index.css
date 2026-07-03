@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --font-syne: "Syne", sans-serif;
+  --color-accent: #10b981;
+  --color-bg: #0a0a0a;
+}
+
+body {
+  margin: 0;
+  background-color: #0a0a0a;
+  color: #e5e5e5;
+  font-family: "Syne", sans-serif;
+}

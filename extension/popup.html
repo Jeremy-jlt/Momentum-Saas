@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Momentum</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        width: 300px;
+        background: #0a0a0a;
+        color: #e5e5e5;
+        font-family: 'Syne', sans-serif;
+        padding: 20px;
+      }
+      .hidden {
+        display: none !important;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #10b981;
+      }
+      .brand span {
+        font-weight: 700;
+        font-size: 13px;
+        letter-spacing: 2px;
+      }
+      label {
+        display: block;
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 4px;
+      }
+      input[type='email'],
+      input[type='password'] {
+        width: 100%;
+        background: transparent;
+        border: 1px solid #374151;
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: #e5e5e5;
+        font-family: inherit;
+        font-size: 13px;
+        margin-bottom: 12px;
+      }
+      input:focus {
+        outline: none;
+        border-color: #10b981;
+      }
+      button {
+        width: 100%;
+        border-radius: 6px;
+        padding: 10px;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        margin-bottom: 8px;
+      }
+      .btn-primary {
+        background: #10b981;
+        color: #000;
+        border: none;
+      }
+      .btn-primary:hover {
+        background: #0ea371;
+      }
+      .btn-secondary {
+        background: transparent;
+        color: #d1d5db;
+        border: 1px solid #374151;
+      }
+      .btn-secondary:hover {
+        border-color: #6b7280;
+      }
+      .email {
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 14px;
+        word-break: break-all;
+      }
+      .card {
+        border: 1px solid #262626;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+      .session-name {
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 6px;
+      }
+      .countdown {
+        font-size: 24px;
+        font-weight: 700;
+        color: #10b981;
+        margin-bottom: 10px;
+      }
+      .domains {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .domain-pill {
+        font-size: 10px;
+        border: 1px solid #374151;
+        color: #9ca3af;
+        border-radius: 999px;
+        padding: 3px 8px;
+      }
+      .empty-title {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .empty-sub {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-bottom: 16px;
+      }
+      .error {
+        color: #f87171;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="brand">
+      <span class="dot"></span>
+      <span>MOMENTUM</span>
+    </div>
+
+    <div id="view-login">
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="toi@exemple.com" />
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" placeholder="••••••••" />
+      <p id="login-error" class="error hidden"></p>
+      <button id="btn-login" class="btn-primary">Se connecter</button>
+    </div>
+
+    <div id="view-active" class="hidden">
+      <p class="email" id="active-email"></p>
+      <div class="card">
+        <div class="session-name" id="active-name"></div>
+        <div class="countdown" id="active-countdown">--:--</div>
+        <div class="domains" id="active-domains"></div>
+      </div>
+      <button id="btn-stop" class="btn-secondary">Arrêter</button>
+      <button id="btn-logout-1" class="btn-secondary">Déconnexion</button>
+    </div>
+
+    <div id="view-empty" class="hidden">
+      <p class="email" id="empty-email"></p>
+      <p class="empty-title">Aucune session active</p>
+      <p class="empty-sub">Lance un test ou attends ta prochaine session planifiée.</p>
+      <button id="btn-manual" class="btn-primary">Tester 25 minutes</button>
+      <button id="btn-logout-2" class="btn-secondary">Déconnexion</button>
+    </div>
+
+    <script src="supabase.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
