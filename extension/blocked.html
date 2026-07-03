@@ -14,10 +14,38 @@
       html,
       body {
         margin: 0;
-        height: 100%;
+        min-height: 100%;
         background: #0a0a0a;
         color: #e5e5e5;
         font-family: 'Syne', sans-serif;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      header {
+        padding: 24px 32px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .brand .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #10b981;
+      }
+      .brand span {
+        font-weight: 700;
+        font-size: 13px;
+        letter-spacing: 2px;
+        color: #fff;
+      }
+      main {
+        flex: 1;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -27,30 +55,75 @@
         padding: 24px;
         max-width: 480px;
       }
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 999px;
-        background: #10b981;
-        margin: 0 auto 24px;
-      }
       h1 {
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 700;
-        margin: 0 0 12px;
+        margin: 0 0 8px;
+        color: #fff;
       }
-      p {
+      .site-name {
+        font-size: 14px;
         color: #9ca3af;
+        margin: 0 0 32px;
+      }
+      .countdown {
+        font-size: 40px;
+        font-weight: 700;
+        color: #10b981;
+        letter-spacing: 2px;
+        margin: 0 0 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .countdown-label {
+        font-size: 12px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0 0 32px;
+      }
+      .motivation {
         font-size: 15px;
-        margin: 0;
+        color: #9ca3af;
+        margin: 0 0 32px;
+      }
+      .btn-secondary {
+        background: transparent;
+        border: 1px solid #374151;
+        color: #d1d5db;
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 13px;
+        border-radius: 6px;
+        padding: 10px 24px;
+        cursor: pointer;
+      }
+      .btn-secondary:hover {
+        border-color: #6b7280;
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <div class="dot"></div>
-      <h1>Ce site est bloqué pendant ta session Momentum.</h1>
-      <p>Reste concentré. Tu l'as décidé toi-même.</p>
-    </div>
+    <header>
+      <div class="brand">
+        <span class="dot"></span>
+        <span>MOMENTUM</span>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap">
+        <h1>Site bloqué</h1>
+        <p class="site-name" id="site-name">—</p>
+
+        <div class="countdown" id="countdown">--:--:--</div>
+        <p class="countdown-label">avant la fin de la session</p>
+
+        <p class="motivation">Reste concentré. Tu l'as décidé toi-même.</p>
+
+        <button class="btn-secondary" id="btn-back">Retour</button>
+      </div>
+    </main>
+
+    <script src="blocked.js"></script>
   </body>
 </html>

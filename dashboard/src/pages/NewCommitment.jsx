@@ -4,6 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 import { SITE_CATEGORIES } from '../data/siteCategories'
 
+const DEFAULT_DUREE_JOURS = 14
+const DEFAULT_MISE_EUROS = 10
+
 export default function NewCommitment() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -13,8 +16,6 @@ export default function NewCommitment() {
   const [customSite, setCustomSite] = useState('')
   const [heureDebut, setHeureDebut] = useState('09:00')
   const [heureFin, setHeureFin] = useState('18:00')
-  const [dureeJours, setDureeJours] = useState(14)
-  const [miseEuros, setMiseEuros] = useState(10)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [created, setCreated] = useState(null)
@@ -53,8 +54,8 @@ export default function NewCommitment() {
       sites_bloques: selectedSites,
       heure_debut: heureDebut,
       heure_fin: heureFin,
-      duree_jours: dureeJours,
-      mise_euros: miseEuros,
+      duree_jours: DEFAULT_DUREE_JOURS,
+      mise_euros: DEFAULT_MISE_EUROS,
       statut: 'en_cours',
       user_id: user.id,
     }
@@ -95,14 +96,6 @@ export default function NewCommitment() {
           <p>
             <span className="text-gray-500">Horaires : </span>
             {created.heure_debut} — {created.heure_fin}
-          </p>
-          <p>
-            <span className="text-gray-500">Durée : </span>
-            {created.duree_jours} jours
-          </p>
-          <p>
-            <span className="text-gray-500">Mise : </span>
-            {created.mise_euros} €
           </p>
         </div>
 
@@ -227,65 +220,28 @@ export default function NewCommitment() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">
-            Durée : <span className="text-white font-bold">{dureeJours} jours</span>
-          </label>
-          <input
-            type="range"
-            min={1}
-            max={90}
-            value={dureeJours}
-            onChange={(e) => setDureeJours(Number(e.target.value))}
-            className="w-full accent-emerald-500"
-          />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>1 jour</span>
-            <span>90 jours</span>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">
-            Mise symbolique : <span className="text-white font-bold">{miseEuros} €</span>
-          </label>
-          <input
-            type="range"
-            min={5}
-            max={50}
-            value={miseEuros}
-            onChange={(e) => setMiseEuros(Number(e.target.value))}
-            className="w-full accent-emerald-500"
-          />
-          <div className="w-full h-1.5 bg-gray-800 rounded-full mt-2 overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 rounded-full transition-all"
-              style={{ width: `${((miseEuros - 5) / (50 - 5)) * 100}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>5 €</span>
-            <span>50 €</span>
-          </div>
-        </div>
-
         {error && <p className="text-red-400 text-sm">{error}</p>}
 
-        <div className="flex items-center gap-4">
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm disabled:opacity-50"
-          >
-            {submitting ? 'Validation...' : "Valider l'engagement"}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-6 py-3 text-sm"
-          >
-            Annuler
-          </button>
+        <div>
+          <div className="flex items-center gap-4">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm disabled:opacity-50"
+            >
+              {submitting ? 'Validation...' : "Valider l'engagement"}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-6 py-3 text-sm"
+            >
+              Annuler
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-3">
+            La durée et la mise seront configurables dans une prochaine version.
+          </p>
         </div>
       </form>
     </div>

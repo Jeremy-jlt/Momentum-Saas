@@ -36,6 +36,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     syncWithSupabase().then(() => sendResponse({ ok: true }))
     return true
   }
+  if (message?.type === 'getSessionInfo') {
+    getSessionInfo(message.siteName).then(sendResponse)
+    return true
+  }
   return false
 })
 
@@ -66,15 +70,18 @@ function sanitizeDomain(domain) {
 }
 
 function buildRule(domain, id) {
+  const cleanDomain = sanitizeDomain(domain)
   return {
     id,
     priority: 1,
     action: {
       type: 'redirect',
-      redirect: { extensionPath: '/blocked.html' },
+      redirect: {
+        extensionPath: `/blocked.html?site=${encodeURIComponent(cleanDomain)}`,
+      },
     },
     condition: {
-      urlFilter: `||${sanitizeDomain(domain)}`,
+      urlFilter: `||${cleanDomain}`,
       resourceTypes: ['main_frame'],
     },
   }
@@ -113,6 +120,14 @@ async function clearBlockRules() {
     console.log('[Momentum] Session terminée, règles supprimées')
   } catch (err) {
     console.error('[Momentum] Échec de la suppression des règles de blocage :', err)
+  }
+}
+
+async function getSessionInfo(siteName) {
+  const { momentum_active_session } = await chrome.storage.local.get('momentum_active_session')
+  return {
+    endsAt: momentum_active_session?.endsAt || null,
+    siteName: siteName || null,
   }
 }
 
