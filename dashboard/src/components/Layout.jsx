@@ -33,6 +33,9 @@ export default function Layout() {
             <NavLink to="/engagements" className={linkClass}>
               Mes engagements
             </NavLink>
+            <NavLink to="/habits" className={linkClass}>
+              Habitudes
+            </NavLink>
             <NavLink to="/how-it-works" className={linkClass}>
               Comment ça marche ?
             </NavLink>
