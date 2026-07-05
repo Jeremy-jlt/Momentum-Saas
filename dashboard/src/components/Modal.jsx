@@ -1,0 +1,10 @@
+export default function Modal({ onClose, children }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="fixed inset-0 bg-black/70" onClick={onClose} />
+      <div className="relative bg-[#141414] border border-[#2a2a2a] rounded-lg p-6 max-w-sm w-full">
+        {children}
+      </div>
+    </div>
+  )
+}

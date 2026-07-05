@@ -1,5 +1,7 @@
 export const HABIT_CATEGORIES = ['Fitness', 'Sommeil', 'Productivité', 'Santé', 'Mental', 'Autre']
 
+export const FREE_HABIT_LIMIT = 5
+
 export const EMOJI_PICKER_GROUPS = [
   { title: 'Activité physique', emojis: ['💪', '🏃', '🚴', '🏊', '⚽', '🎾', '🧘'] },
   { title: 'Sommeil/repos', emojis: ['😴', '🌙', '⏰', '🛏️'] },
