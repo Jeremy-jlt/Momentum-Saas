@@ -15,8 +15,10 @@ export default function Layout() {
   }
 
   const linkClass = ({ isActive }) =>
-    `text-xs font-medium transition-colors ${
-      isActive ? 'text-[#10b981]' : 'text-[#4b5563] hover:text-gray-300'
+    `relative pb-1 text-xs font-medium transition-colors after:absolute after:left-0 after:bottom-0 after:h-[1.5px] after:bg-[#10b981] after:transition-[width] after:duration-150 after:ease-out ${
+      isActive
+        ? 'text-[#10b981] after:w-full'
+        : 'text-[#4b5563] hover:text-gray-300 after:w-0 hover:after:w-full'
     }`
 
   const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : ''
@@ -70,7 +72,7 @@ export default function Layout() {
               <>
                 <Link
                   to="/new"
-                  className="bg-[#10b981] hover:bg-emerald-600 transition-colors text-[#052e1f] rounded-[5px] px-3 py-1.5 text-[11px] font-bold whitespace-nowrap"
+                  className="bg-[#10b981] hover:bg-emerald-600 hover:shadow-[0_0_8px_rgba(16,185,129,0.3)] transition-[background-color,box-shadow] duration-200 text-[#052e1f] rounded-[5px] px-3 py-1.5 text-[11px] font-bold whitespace-nowrap"
                 >
                   + Nouveau
                 </Link>

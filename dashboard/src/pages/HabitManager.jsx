@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   DndContext,
@@ -20,6 +20,7 @@ import { EMOJI_PICKER_GROUPS, FREE_HABIT_LIMIT, HABIT_CATEGORIES } from '../data
 import Modal from '../components/Modal'
 import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
+import { useToast } from '../components/Toast'
 
 const DEFAULT_OBJECTIF_JOURS = 30
 
@@ -56,10 +57,29 @@ function SortableHabitRow({ id, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   })
+  const [justDropped, setJustDropped] = useState(false)
+  const wasDragging = useRef(false)
+
+  useEffect(() => {
+    if (wasDragging.current && !isDragging) {
+      setJustDropped(true)
+      const timeoutId = setTimeout(() => setJustDropped(false), 150)
+      wasDragging.current = isDragging
+      return () => clearTimeout(timeoutId)
+    }
+    wasDragging.current = isDragging
+  }, [isDragging])
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: transform
+      ? `${CSS.Transform.toString(transform)}${isDragging ? ' rotate(1.5deg)' : ''}`
+      : undefined,
+    // @dnd-kit n'expose qu'une chaîne de transition CSS, pas une API physique
+    // ({damping, stiffness} demandé) : on approxime le ressort avec un
+    // cubic-bezier à léger dépassement plutôt que l'easing linéaire par défaut.
+    transition: transition
+      ? transition.replace(/cubic-bezier\([^)]*\)|\bease[a-z-]*\b/i, 'cubic-bezier(0.34, 1.56, 0.64, 1)')
+      : transition,
   }
 
   return (
@@ -67,8 +87,8 @@ function SortableHabitRow({ id, children }) {
       ref={setNodeRef}
       style={style}
       className={`flex items-center flex-wrap gap-3 rounded-md px-3 py-2 hover:bg-[#1a1a1a] transition-colors ${
-        isDragging ? 'relative z-10 opacity-70 shadow-lg shadow-black/50 bg-[#1a1a1a]' : ''
-      }`}
+        isDragging ? 'relative z-10 opacity-70 shadow-[0_8px_24px_rgba(0,0,0,0.4)] bg-[#1a1a1a]' : ''
+      } ${justDropped ? 'animate-[drop-bounce_150ms_ease-out]' : ''}`}
     >
       <button
         type="button"
@@ -89,6 +109,7 @@ export default function HabitManager() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isOnline = useOnlineStatus()
+  const showToast = useToast()
 
   // Simule l'état Pro en attendant l'intégration Stripe.
   const isPro = true
@@ -143,7 +164,11 @@ export default function HabitManager() {
 
   const updateHabitude = async (id, patch) => {
     setHabitudes((prev) => prev.map((h) => (h.id === id ? { ...h, ...patch } : h)))
-    await supabase.from('habitudes').update(patch).eq('id', id)
+    const { error: updateError } = await supabase.from('habitudes').update(patch).eq('id', id)
+
+    if (updateError) {
+      showToast("La modification n'a pas pu être enregistrée.", 'error')
+    }
   }
 
   const handleToggleActif = (h) => {
@@ -190,8 +215,7 @@ export default function HabitManager() {
 
     if (reorderError) {
       console.error('[dnd-kit] failed to persist new order', reorderError)
-    } else {
-      console.log('[dnd-kit] new order persisted to Supabase')
+      showToast("Le nouvel ordre n'a pas pu être enregistré.", 'error')
     }
   }
 
@@ -202,13 +226,28 @@ export default function HabitManager() {
     if (!confirmed) return
 
     setHabitudes((prev) => prev.filter((h) => h.id !== id))
-    await supabase.from('habitudes').delete().eq('id', id)
+    const { error: deleteError } = await supabase.from('habitudes').delete().eq('id', id)
+
+    if (deleteError) {
+      showToast("La suppression de l'habitude a échoué.", 'error')
+    } else {
+      showToast('Habitude supprimée.', 'success')
+    }
   }
 
   const handleDeleteAll = async () => {
     setHabitudes([])
     setShowDeleteAllModal(false)
-    await supabase.from('habitudes').delete().eq('user_id', user.id)
+    const { error: deleteAllError } = await supabase
+      .from('habitudes')
+      .delete()
+      .eq('user_id', user.id)
+
+    if (deleteAllError) {
+      showToast('La suppression des habitudes a échoué.', 'error')
+    } else {
+      showToast('Toutes les habitudes ont été supprimées.', 'success')
+    }
   }
 
   const handleAdd = async () => {
@@ -246,6 +285,7 @@ export default function HabitManager() {
 
     if (insertError) {
       setError(insertError.message)
+      showToast("L'ajout de l'habitude a échoué.", 'error')
       return
     }
 
@@ -253,6 +293,7 @@ export default function HabitManager() {
     setNewNom('')
     setNewEmoji('🎯')
     setNewCategorie('Autre')
+    showToast('Habitude ajoutée.', 'success')
   }
 
   if (loading) {

@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 import Modal from '../components/Modal'
 import ProjectForm from '../components/ProjectForm'
+import { useToast } from '../components/Toast'
 import { formatDurationMinutes, parseISODate, toISODate } from '../utils/dateUtils'
 
 const SESSIONS_PAGE_SIZE = 20
@@ -30,6 +31,7 @@ export default function ProjectDetail() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const showToast = useToast()
 
   const [projet, setProjet] = useState(null)
   const [sessions, setSessions] = useState([])
@@ -101,13 +103,22 @@ export default function ProjectDetail() {
 
   const handleUpdate = async (payload) => {
     const { error: updateError } = await supabase.from('projets').update(payload).eq('id', id)
-    if (updateError) throw updateError
+    if (updateError) {
+      showToast('La modification du projet a échoué.', 'error')
+      throw updateError
+    }
     setShowEditModal(false)
+    showToast('Projet mis à jour.', 'success')
     load()
   }
 
   const handleDelete = async () => {
-    await supabase.from('projets').delete().eq('id', id)
+    const { error: deleteError } = await supabase.from('projets').delete().eq('id', id)
+    if (deleteError) {
+      setShowDeleteModal(false)
+      showToast('La suppression du projet a échoué.', 'error')
+      return
+    }
     navigate('/projects')
   }
 

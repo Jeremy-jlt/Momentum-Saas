@@ -7,11 +7,13 @@ import ProjectForm from '../components/ProjectForm'
 import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { formatDurationMinutes, formatRelativeDate } from '../utils/dateUtils'
+import { useToast } from '../components/Toast'
 
 export default function Projects() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isOnline = useOnlineStatus()
+  const showToast = useToast()
 
   const [projets, setProjets] = useState([])
   const [sessions, setSessions] = useState([])
@@ -64,8 +66,12 @@ export default function Projects() {
 
   const handleCreate = async (payload) => {
     const { error } = await supabase.from('projets').insert({ ...payload, user_id: user.id })
-    if (error) throw error
+    if (error) {
+      showToast('La création du projet a échoué.', 'error')
+      throw error
+    }
     setShowCreateModal(false)
+    showToast('Projet créé.', 'success')
     load()
   }
 

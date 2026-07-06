@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Bar,
@@ -25,6 +25,7 @@ import DraggableWidget from '../components/DraggableWidget'
 import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { enqueueOfflineAction } from '../utils/offlineQueue'
+import { useToast } from '../components/Toast'
 
 const STREAK_THRESHOLD = 0.8
 const MAX_STREAK_LOOKBACK_DAYS = 3650
@@ -145,15 +146,22 @@ function RingProgress({ size, radius, strokeWidth, percent, color, children }) {
   )
 }
 
-function ProgressRing({ percent, label, size = 84 }) {
+function ProgressRing({ percent, label, size = 84, index = 0, animate = false }) {
+  const [hovering, setHovering] = useState(false)
   const data = [{ value: percent }, { value: 100 - percent }]
   const innerRadius = Math.round(size * 0.38)
   const outerRadius = Math.round(size * 0.48)
-  const fontSize = Math.max(10, Math.round(size * 0.17))
+  const baseFontSize = Math.max(10, Math.round(size * 0.17))
+  const fontSize = hovering ? baseFontSize + 2 : baseFontSize
   const labelSize = Math.max(9, Math.round(size * 0.13))
 
   return (
-    <div className="flex flex-col items-center gap-1.5 shrink-0">
+    <div
+      className="flex flex-col items-center gap-1.5 shrink-0 transition-transform duration-150"
+      style={{ transform: hovering ? 'translateY(-2px)' : 'translateY(0)' }}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+    >
       <div className="relative" style={{ width: size, height: size }}>
         <PieChart width={size} height={size}>
           <Pie
@@ -164,13 +172,19 @@ function ProgressRing({ percent, label, size = 84 }) {
             innerRadius={innerRadius}
             outerRadius={outerRadius}
             stroke="none"
-            isAnimationActive={false}
+            isAnimationActive={animate}
+            animationDuration={800}
+            animationEasing="ease-out"
+            animationBegin={index * 100}
           >
             <Cell fill={ringColor(percent)} />
             <Cell fill="#1f2937" />
           </Pie>
         </PieChart>
-        <div className="absolute inset-0 flex items-center justify-center font-bold" style={{ fontSize }}>
+        <div
+          className="absolute inset-0 flex items-center justify-center font-bold transition-[font-size] duration-150"
+          style={{ fontSize }}
+        >
           {percent}%
         </div>
       </div>
@@ -218,6 +232,78 @@ function MoodPopover({ initialScore, onSave, onCancel }) {
   )
 }
 
+function ChartTypeButton({ type, icon, label, active, locked, onSelect }) {
+  const [pressed, setPressed] = useState(false)
+  const [popping, setPopping] = useState(false)
+  const wasActiveRef = useRef(active)
+
+  useEffect(() => {
+    if (active && !wasActiveRef.current) {
+      setPopping(true)
+      const t = setTimeout(() => setPopping(false), 200)
+      wasActiveRef.current = active
+      return () => clearTimeout(t)
+    }
+    wasActiveRef.current = active
+  }, [active])
+
+  const handleClick = () => {
+    if (locked) return
+    setPressed(true)
+    setTimeout(() => setPressed(false), 80)
+    onSelect(type)
+  }
+
+  const transformClass = popping
+    ? 'animate-[pop_200ms_ease-in-out]'
+    : `transition-transform duration-[80ms] ${pressed ? 'scale-[0.92]' : 'scale-100'}`
+
+  return (
+    <div className="relative group/tooltip">
+      <button
+        onClick={handleClick}
+        disabled={locked}
+        className={`w-7 h-7 rounded-md flex items-center justify-center text-xs border transition-[background-color,border-color] duration-[120ms] ${transformClass} ${
+          locked
+            ? 'bg-[#1a1a1a] border-gray-800 text-gray-700 cursor-not-allowed'
+            : active
+              ? 'bg-emerald-500 border-emerald-500 text-black'
+              : 'bg-[#1a1a1a] border-gray-700 text-white hover:bg-[#1f1f1f]'
+        }`}
+      >
+        {icon}
+      </button>
+
+      <span
+        className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#111111] text-[#9ca3af] text-[11px] rounded px-2 py-1 opacity-0 pointer-events-none transition-opacity group-hover/tooltip:opacity-100 group-hover/tooltip:delay-[400ms]"
+      >
+        {locked ? 'Pro 🔒' : label}
+      </span>
+    </div>
+  )
+}
+
+// Composant de niveau module (pas une fonction imbriquée) : sa référence doit
+// rester stable entre les rendus de Habits, sinon React le démonte/remonte à
+// chaque re-render et l'animation de remplissage rejoue en boucle.
+function AnimatedProgressBar({ target }) {
+  const [width, setWidth] = useState(0)
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setWidth(target))
+    return () => cancelAnimationFrame(raf)
+  }, [target])
+
+  return (
+    <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+      <div
+        className="h-full bg-emerald-500 rounded-full transition-[width] duration-[600ms] ease-out"
+        style={{ width: `${width}%` }}
+      />
+    </div>
+  )
+}
+
 export default function Habits() {
   const { user } = useAuth()
   const today = useMemo(() => new Date(), [])
@@ -242,6 +328,14 @@ export default function Habits() {
   const [layout, setLayout] = useState(() => localStorage.getItem(LAYOUT_STORAGE_KEY) || 'focus')
   const [compactStatsExpanded, setCompactStatsExpanded] = useState(false)
   const [zenIndex, setZenIndex] = useState(0)
+  const [ringsAnimated, setRingsAnimated] = useState(false)
+  const [shakingCellKey, setShakingCellKey] = useState(null)
+  const showToast = useToast()
+  const [displayedChartType, setDisplayedChartType] = useState(
+    () => (isPro ? chartType : 'line') || 'line'
+  )
+  const [chartAnimPhase, setChartAnimPhase] = useState('idle')
+  const chartAnimTimeoutsRef = useRef([])
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCustomizePanel, setShowCustomizePanel] = useState(false)
   const [openMoodDate, setOpenMoodDate] = useState(null)
@@ -271,6 +365,26 @@ export default function Habits() {
   // ce qui a été mémorisé dans localStorage (ex : après une rétrogradation).
   const effectiveChartType = isPro ? chartType : 'line'
   const effectiveLayout = isPro ? layout : 'focus'
+
+  // Transition entre types de graphiques : l'ancien s'efface (150ms) avant
+  // que le nouveau apparaisse en fondu + légère montée (200ms) — le contenu
+  // affiché (displayedChartType) est volontairement en retard sur le type
+  // réellement sélectionné (effectiveChartType) pendant la bascule.
+  useEffect(() => {
+    if (effectiveChartType === displayedChartType) return
+
+    chartAnimTimeoutsRef.current.forEach(clearTimeout)
+    chartAnimTimeoutsRef.current = []
+
+    setChartAnimPhase('out')
+    const outTimeout = setTimeout(() => {
+      setDisplayedChartType(effectiveChartType)
+      setChartAnimPhase('in')
+      const inTimeout = setTimeout(() => setChartAnimPhase('idle'), 200)
+      chartAnimTimeoutsRef.current.push(inTimeout)
+    }, 150)
+    chartAnimTimeoutsRef.current.push(outTimeout)
+  }, [effectiveChartType, displayedChartType])
 
   useEffect(() => {
     if (!user) return
@@ -309,6 +423,14 @@ export default function Habits() {
       cancelled = true
     }
   }, [user])
+
+  // Les anneaux hebdomadaires ne jouent leur animation de remplissage en
+  // cascade qu'au chargement de la page — pas à chaque re-render déclenché
+  // par une coche ailleurs dans la grille.
+  useEffect(() => {
+    const t = setTimeout(() => setRingsAnimated(true), 1300)
+    return () => clearTimeout(t)
+  }, [])
 
   const handleChartTypeChange = (type) => {
     setChartType(type)
@@ -632,7 +754,16 @@ export default function Habits() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [numDays, relevantDaysForMonth, completionsByDate, totalHabitudes, viewYear, viewMonth])
 
+  const triggerShake = (cellKey) => {
+    setShakingCellKey(cellKey)
+    setTimeout(() => {
+      setShakingCellKey((cur) => (cur === cellKey ? null : cur))
+    }, 300)
+  }
+
   const toggleCompletion = async (habitudeId, dateISO, isChecked) => {
+    const cellKey = `${habitudeId}|${dateISO}`
+
     if (isChecked) {
       setCompletions((prev) => prev.filter((c) => !(c.habitude_id === habitudeId && c.date === dateISO)))
 
@@ -645,12 +776,18 @@ export default function Habits() {
         return
       }
 
-      await supabase
+      const { error } = await supabase
         .from('completions')
         .delete()
         .eq('habitude_id', habitudeId)
         .eq('date', dateISO)
         .eq('user_id', user.id)
+
+      if (error) {
+        setCompletions((prev) => [...prev, { habitude_id: habitudeId, date: dateISO }])
+        triggerShake(cellKey)
+        showToast("La coche n'a pas pu être retirée. Réessaie.", 'error')
+      }
     } else {
       setCompletions((prev) => [...prev, { habitude_id: habitudeId, date: dateISO }])
 
@@ -671,11 +808,15 @@ export default function Habits() {
         setCompletions((prev) =>
           prev.filter((c) => !(c.habitude_id === habitudeId && c.date === dateISO))
         )
+        triggerShake(cellKey)
+        showToast("La coche n'a pas pu être enregistrée. Réessaie.", 'error')
       }
     }
   }
 
   const saveMood = async (dateISO, score) => {
+    const previous = sentiments.find((s) => s.date === dateISO)?.score ?? null
+
     setSentiments((prev) => {
       const exists = prev.some((s) => s.date === dateISO)
       return exists
@@ -683,9 +824,19 @@ export default function Habits() {
         : [...prev, { date: dateISO, score }]
     })
     setOpenMoodDate(null)
-    await supabase
+
+    const { error } = await supabase
       .from('sentiments')
       .upsert({ user_id: user.id, date: dateISO, score }, { onConflict: 'user_id,date' })
+
+    if (error) {
+      setSentiments((prev) =>
+        previous === null
+          ? prev.filter((s) => s.date !== dateISO)
+          : prev.map((s) => (s.date === dateISO ? { ...s, score: previous } : s))
+      )
+      showToast("L'humeur n'a pas pu être enregistrée. Réessaie.", 'error')
+    }
   }
 
   const rowStats = (habitudeId) => {
@@ -832,27 +983,28 @@ export default function Habits() {
 
   const renderStatCards = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5">
         <p className="text-3xl font-bold text-emerald-500 mb-1">{monthStats.rate}%</p>
         <p className="text-xs text-gray-500">ce mois</p>
       </div>
 
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
-        <p className="text-3xl font-bold mb-1">{streak}</p>
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5">
+        <p
+          className={`text-3xl font-bold mb-1 inline-block ${
+            streak > 0 ? 'animate-[pulse-subtle_2s_ease-in-out_infinite]' : ''
+          }`}
+        >
+          {streak}
+        </p>
         <p className="text-xs text-gray-500">🔥 jours consécutifs</p>
       </div>
 
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5">
         <p className="text-3xl font-bold mb-1">
           {todayCompletedCount}/{totalHabitudes}
         </p>
         <p className="text-xs text-gray-500 mb-3">aujourd'hui</p>
-        <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-emerald-500 rounded-full transition-all"
-            style={{ width: `${todayPercent}%` }}
-          />
-        </div>
+        <AnimatedProgressBar target={todayPercent} />
       </div>
     </div>
   )
@@ -909,8 +1061,15 @@ export default function Habits() {
       </div>
 
       <div className={stacked ? 'grid grid-cols-2 gap-4' : 'flex items-center gap-6'}>
-        {weeks.map((w) => (
-          <ProgressRing key={w.label} percent={w.percent} label={w.label} size={size} />
+        {weeks.map((w, i) => (
+          <ProgressRing
+            key={w.label}
+            percent={w.percent}
+            label={w.label}
+            size={size}
+            index={i}
+            animate={!ringsAnimated}
+          />
         ))}
       </div>
     </div>
@@ -918,8 +1077,15 @@ export default function Habits() {
 
   const renderRingsRow = (size = 60) => (
     <div className="flex items-center gap-4 overflow-x-auto mb-6">
-      {weeks.map((w) => (
-        <ProgressRing key={w.label} percent={w.percent} label={w.label} size={size} />
+      {weeks.map((w, i) => (
+        <ProgressRing
+          key={w.label}
+          percent={w.percent}
+          label={w.label}
+          size={size}
+          index={i}
+          animate={!ringsAnimated}
+        />
       ))}
     </div>
   )
@@ -1114,6 +1280,7 @@ export default function Habits() {
                             size={cellSize}
                             fontSize={cellFont}
                             style={heatStyle}
+                            shake={shakingCellKey === `${h.id}|${iso}`}
                           />
                         </td>
                       )
@@ -1233,44 +1400,30 @@ export default function Habits() {
 
   const CHART_TYPE_GROUPS = [
     [
-      { type: 'line', icon: '📈' },
-      { type: 'bar', icon: '📊' },
-      { type: 'bars_habits', icon: '≡' },
-      { type: 'bars_categories', icon: '⊟' },
-      { type: 'bars_topflop', icon: '⊞' },
+      { type: 'line', icon: '📈', label: 'Courbe' },
+      { type: 'bar', icon: '📊', label: 'Histogramme' },
+      { type: 'bars_habits', icon: '≡', label: 'Barres par habitude' },
+      { type: 'bars_categories', icon: '⊟', label: 'Barres par catégorie' },
+      { type: 'bars_topflop', icon: '⊞', label: 'Top & Flop' },
     ],
     [
-      { type: 'rings_habits', icon: '🔵' },
-      { type: 'rings_categories', icon: '⭕' },
-      { type: 'rings_global', icon: '🎯' },
+      { type: 'rings_habits', icon: '🔵', label: 'Anneaux par habitude' },
+      { type: 'rings_categories', icon: '⭕', label: 'Anneaux concentriques' },
+      { type: 'rings_global', icon: '🎯', label: 'Anneau global' },
     ],
   ]
 
-  const renderChartTypeButton = (opt) => {
-    const locked = opt.type !== 'line' && !isPro
-    return (
-      <div key={opt.type} className="relative group/tooltip">
-        <button
-          onClick={() => !locked && handleChartTypeChange(opt.type)}
-          disabled={locked}
-          className={`w-7 h-7 rounded-md flex items-center justify-center text-xs border transition-colors ${
-            locked
-              ? 'bg-[#1a1a1a] border-gray-800 text-gray-700 cursor-not-allowed'
-              : effectiveChartType === opt.type
-                ? 'bg-emerald-500 border-emerald-500 text-black'
-                : 'bg-[#1a1a1a] border-gray-700 text-white'
-          }`}
-        >
-          {opt.icon}
-        </button>
-        {locked && (
-          <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#1a1a1a] border border-gray-700 text-gray-300 text-[10px] rounded px-2 py-1 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none">
-            Pro 🔒
-          </span>
-        )}
-      </div>
-    )
-  }
+  const renderChartTypeButton = (opt) => (
+    <ChartTypeButton
+      key={opt.type}
+      type={opt.type}
+      icon={opt.icon}
+      label={opt.label}
+      active={effectiveChartType === opt.type}
+      locked={opt.type !== 'line' && !isPro}
+      onSelect={handleChartTypeChange}
+    />
+  )
 
   const renderChartBarsHabits = () => (
     <div className="flex flex-col gap-3 py-2">
@@ -1366,7 +1519,11 @@ export default function Habits() {
           >
             <span style={{ fontSize: 11, fontWeight: 700, color: '#f5f5f5' }}>{h.percent}%</span>
           </RingProgress>
-          <span className="text-center" style={{ fontSize: 10, color: '#6b7280' }}>
+          <span
+            className="text-center truncate w-full"
+            style={{ fontSize: 10, color: '#6b7280' }}
+            title={`${h.emoji} ${h.nom}`}
+          >
             {h.emoji} {truncateLabel(h.nom, 12)}
           </span>
         </div>
@@ -1427,7 +1584,7 @@ export default function Habits() {
   }
 
   const renderChartRingsGlobal = () => (
-    <div className="flex items-center gap-6 py-2 flex-wrap">
+    <div className="flex items-center justify-center gap-6 py-2 flex-wrap">
       <RingProgress
         size={100}
         radius={42}
@@ -1460,13 +1617,19 @@ export default function Habits() {
   )
 
   const renderChartSection = () => {
-    const isRechartsType = effectiveChartType === 'line' || effectiveChartType === 'bar'
+    const isRechartsType = displayedChartType === 'line' || displayedChartType === 'bar'
+    const chartBodyClass =
+      chartAnimPhase === 'out'
+        ? 'transition-opacity duration-150 opacity-0'
+        : chartAnimPhase === 'in'
+          ? 'animate-[slide-up_200ms_ease-out]'
+          : 'opacity-100'
 
     return (
       <div className="border border-gray-800 rounded-lg p-4 mb-12">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <p className="text-sm text-gray-300">
-            {CHART_TYPE_TITLES[effectiveChartType] || 'Progression sur 30 jours'}
+            {CHART_TYPE_TITLES[displayedChartType] || 'Progression sur 30 jours'}
           </p>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
@@ -1479,53 +1642,55 @@ export default function Habits() {
           </div>
         </div>
 
-        {isRechartsType ? (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              {effectiveChartType === 'bar' ? (
-                <BarChart data={chartData}>
-                  <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
-                  <YAxis
-                    domain={[0, 100]}
-                    stroke="#6b7280"
-                    fontSize={11}
-                    tickFormatter={(v) => `${v}%`}
-                    width={40}
-                  />
-                  <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
-                  <Bar dataKey="taux" fill="#10b981" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              ) : (
-                <LineChart data={chartData}>
-                  <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
-                  <YAxis
-                    domain={[0, 100]}
-                    stroke="#6b7280"
-                    fontSize={11}
-                    tickFormatter={(v) => `${v}%`}
-                    width={40}
-                  />
-                  <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
-                  <Line type="monotone" dataKey="taux" stroke="#10b981" strokeWidth={2} dot={false} />
-                </LineChart>
-              )}
-            </ResponsiveContainer>
-          </div>
-        ) : effectiveChartType === 'bars_habits' ? (
-          renderChartBarsHabits()
-        ) : effectiveChartType === 'bars_categories' ? (
-          renderChartBarsCategories()
-        ) : effectiveChartType === 'bars_topflop' ? (
-          renderChartBarsTopFlop()
-        ) : effectiveChartType === 'rings_habits' ? (
-          renderChartRingsHabits()
-        ) : effectiveChartType === 'rings_categories' ? (
-          renderChartRingsCategories()
-        ) : (
-          renderChartRingsGlobal()
-        )}
+        <div className={chartBodyClass}>
+          {isRechartsType ? (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                {displayedChartType === 'bar' ? (
+                  <BarChart data={chartData}>
+                    <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
+                    <YAxis
+                      domain={[0, 100]}
+                      stroke="#6b7280"
+                      fontSize={11}
+                      tickFormatter={(v) => `${v}%`}
+                      width={40}
+                    />
+                    <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
+                    <Bar dataKey="taux" fill="#10b981" radius={[3, 3, 0, 0]} />
+                  </BarChart>
+                ) : (
+                  <LineChart data={chartData}>
+                    <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
+                    <YAxis
+                      domain={[0, 100]}
+                      stroke="#6b7280"
+                      fontSize={11}
+                      tickFormatter={(v) => `${v}%`}
+                      width={40}
+                    />
+                    <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
+                    <Line type="monotone" dataKey="taux" stroke="#10b981" strokeWidth={2} dot={false} />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          ) : displayedChartType === 'bars_habits' ? (
+            renderChartBarsHabits()
+          ) : displayedChartType === 'bars_categories' ? (
+            renderChartBarsCategories()
+          ) : displayedChartType === 'bars_topflop' ? (
+            renderChartBarsTopFlop()
+          ) : displayedChartType === 'rings_habits' ? (
+            renderChartRingsHabits()
+          ) : displayedChartType === 'rings_categories' ? (
+            renderChartRingsCategories()
+          ) : (
+            renderChartRingsGlobal()
+          )}
+        </div>
       </div>
     )
   }
@@ -1673,6 +1838,7 @@ export default function Habits() {
                 fontSize="text-sm"
                 onClick={() => toggleCompletion(h.id, d.iso, d.checked)}
                 title={state === 'missed' ? 'Rattraper cette journée ?' : undefined}
+                shake={shakingCellKey === `${h.id}|${d.iso}`}
               />
               <span className="text-[10px] text-gray-500">{label}</span>
             </div>
@@ -1703,10 +1869,11 @@ export default function Habits() {
             <div className="text-center">
               <button
                 disabled
-                className="w-full rounded-lg bg-gray-700 text-gray-300 font-bold text-base cursor-default"
-                style={{ height: 52 }}
+                className="w-full rounded-lg font-bold text-base cursor-default transition-colors duration-300"
+                style={{ height: 52, background: '#059669', color: '#052e1f' }}
               >
-                ✓ Fait aujourd'hui
+                <span className="inline-block animate-[pop_300ms_ease-in-out]">✓</span> Fait
+                aujourd'hui
               </button>
               <button
                 onClick={() => toggleCompletion(h.id, todayISO, true)}
@@ -1718,7 +1885,7 @@ export default function Habits() {
           ) : (
             <button
               onClick={() => toggleCompletion(h.id, todayISO, false)}
-              className="momentum-pulse-subtle w-full rounded-lg bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold text-base"
+              className="momentum-pulse-subtle active:scale-[0.97] transition-[background-color,transform] duration-[80ms] w-full rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-base"
               style={{ height: 52 }}
             >
               ✓ Marquer comme faite aujourd'hui
@@ -1869,8 +2036,8 @@ export default function Habits() {
             {habitudes.map((h, i) => (
               <span
                 key={h.id}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  i === idx ? 'bg-emerald-500' : 'bg-gray-700'
+                className={`h-1.5 transition-[width,background-color] duration-200 ${
+                  i === idx ? 'w-4 rounded-[3px] bg-emerald-500' : 'w-1.5 rounded-full bg-gray-700'
                 }`}
               />
             ))}
@@ -2029,13 +2196,15 @@ export default function Habits() {
         </>
       )}
 
-      {effectiveLayout === 'dashboard'
-        ? renderDashboardLayout()
-        : effectiveLayout === 'compact'
-          ? renderCompactLayout()
-          : effectiveLayout === 'zen'
-            ? renderZenLayout()
-            : renderFocusLayout()}
+      <div key={effectiveLayout} className="animate-[layout-fade-in_200ms_ease-out]">
+        {effectiveLayout === 'dashboard'
+          ? renderDashboardLayout()
+          : effectiveLayout === 'compact'
+            ? renderCompactLayout()
+            : effectiveLayout === 'zen'
+              ? renderZenLayout()
+              : renderFocusLayout()}
+      </div>
       </div>
     </>
   )
