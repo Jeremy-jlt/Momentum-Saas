@@ -6,11 +6,68 @@
   --color-bg: #0a0a0a;
 }
 
+/*
+ * Theme tokens. Dark values below are the project's original hardcoded
+ * colors, kept as the default so existing users see no change. Light
+ * values are a warm, editorial-style palette for the alternate theme.
+ * Components consume these via Tailwind arbitrary values, e.g.
+ * bg-[var(--surface-0)], so both themes stay in sync from one place.
+ */
+:root,
+[data-theme='dark'] {
+  --surface-0: #0a0a0a;
+  --surface-1: #111111;
+  --surface-2: #141414;
+  --surface-3: #1a1a1a;
+  --border: #2a2a2a;
+  --border-faint: #1f1f1f;
+  --border-strong: #374151;
+  --text: #e5e5e5;
+  --text-strong: #ffffff;
+  --text-muted: #9ca3af;
+  --text-faint: #6b7280;
+  --text-subtle: #4b5563;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-contrast: #052e1f;
+  --danger: #ef4444;
+  --danger-strong: #dc2626;
+  --danger-bg: #2d0a0a;
+  --cell-empty: #1f2937;
+  --cell-empty-hover: #2a2a2a;
+  --cell-future: #111827;
+}
+
+[data-theme='light'] {
+  --surface-0: #fbfbfa;
+  --surface-1: #ffffff;
+  --surface-2: #f7f6f3;
+  --surface-3: #f0efec;
+  --border: #e5e3de;
+  --border-faint: #ececea;
+  --border-strong: #d8d6d0;
+  --text: #2f3437;
+  --text-strong: #111111;
+  --text-muted: #6b6b66;
+  --text-faint: #8a8a85;
+  --text-subtle: #a3a39c;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-contrast: #052e1f;
+  --danger: #dc2626;
+  --danger-strong: #b91c1c;
+  --danger-bg: #fdecec;
+  --cell-empty: #efece6;
+  --cell-empty-hover: #e2ded4;
+  --cell-future: #e5e3de;
+}
+
 body {
   margin: 0;
-  background-color: #0a0a0a;
-  color: #e5e5e5;
+  background-color: var(--surface-0);
+  color: var(--text);
   font-family: "Syne", sans-serif;
+  transition: background-color 200ms ease-out, color 200ms ease-out;
 }
 
 .mood-slider {

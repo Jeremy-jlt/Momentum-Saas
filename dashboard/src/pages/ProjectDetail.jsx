@@ -124,7 +124,7 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-24 text-center text-gray-400">
+      <div className="max-w-4xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
         Chargement...
       </div>
     )
@@ -133,10 +133,10 @@ export default function ProjectDetail() {
   if (error || !projet) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-24 text-center">
-        <p className="text-red-400 mb-6">{error}</p>
+        <p className="text-[var(--danger)] mb-6">{error}</p>
         <button
           onClick={() => navigate('/projects')}
-          className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
         >
           Retour aux projets
         </button>
@@ -154,28 +154,28 @@ export default function ProjectDetail() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowEditModal(true)}
-            className="text-xs border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-3 py-2"
+            className="text-xs border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-3 py-2"
           >
             Modifier ✏
           </button>
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="text-xs border border-gray-700 text-gray-400 hover:border-red-500 hover:text-red-400 transition-colors rounded-md px-3 py-2"
+            className="text-xs border border-[var(--border)] text-[var(--text-faint)] hover:border-[var(--danger)] hover:text-[var(--danger)] transition-colors rounded-md px-3 py-2"
           >
             Supprimer 🗑
           </button>
         </div>
       </div>
 
-      {projet.description && <p className="text-gray-400 text-sm mb-4">{projet.description}</p>}
+      {projet.description && <p className="text-[var(--text-faint)] text-sm mb-4">{projet.description}</p>}
 
       {habitudeLiee && (
-        <span className="inline-block text-xs border border-gray-700 text-gray-400 rounded-full px-3 py-1 mb-6">
+        <span className="inline-block text-xs border border-[var(--border)] text-[var(--text-faint)] rounded-full px-3 py-1 mb-6">
           Lié à {habitudeLiee.emoji} {habitudeLiee.nom}
         </span>
       )}
 
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-400 mb-10">
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--text-faint)] mb-10">
         <span>
           {sessions.length} session{sessions.length > 1 ? 's' : ''}
         </span>
@@ -203,20 +203,20 @@ export default function ProjectDetail() {
       {showDeleteModal && (
         <Modal onClose={() => setShowDeleteModal(false)}>
           <h3 className="font-bold text-lg mb-2">Supprimer ce projet ?</h3>
-          <p className="text-sm text-gray-300 mb-6">
+          <p className="text-sm text-[var(--text-muted)] mb-6">
             Cette action supprimera définitivement le projet et toutes ses sessions
             de travail enregistrées. Cette action est irréversible.
           </p>
           <div className="flex items-center gap-3 justify-end">
             <button
               onClick={() => setShowDeleteModal(false)}
-              className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Annuler
             </button>
             <button
               onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600 transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
+              className="bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
             >
               Supprimer
             </button>
@@ -224,22 +224,22 @@ export default function ProjectDetail() {
         </Modal>
       )}
 
-      <div className="border border-gray-800 rounded-lg p-4 mb-10">
-        <p className="text-sm text-gray-300 mb-4">Activité sur 30 jours</p>
+      <div className="border border-[var(--border)] rounded-lg p-4 mb-10">
+        <p className="text-sm text-[var(--text-muted)] mb-4">Activité sur 30 jours</p>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
-              <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
-              <YAxis stroke="#6b7280" fontSize={11} width={40} tickFormatter={(v) => `${v}min`} />
+              <CartesianGrid stroke="var(--border-faint)" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="label" stroke="var(--text-faint)" fontSize={11} tickMargin={8} />
+              <YAxis stroke="var(--text-faint)" fontSize={11} width={40} tickFormatter={(v) => `${v}min`} />
               <Tooltip
                 contentStyle={{
-                  background: '#141414',
-                  border: '1px solid #2a2a2a',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--border)',
                   borderRadius: 8,
                   fontSize: 12,
                 }}
-                labelStyle={{ color: '#9ca3af' }}
+                labelStyle={{ color: 'var(--text-muted)' }}
                 formatter={(value) => [`${value} min`, 'Temps travaillé']}
               />
               <Bar dataKey="minutes" fill={projet.couleur} radius={[3, 3, 0, 0]} />
@@ -251,17 +251,17 @@ export default function ProjectDetail() {
       <h2 className="text-xl font-bold mb-4">Sessions de travail</h2>
 
       {sessions.length === 0 ? (
-        <p className="text-gray-500 text-sm">Aucune session enregistrée pour ce projet.</p>
+        <p className="text-[var(--text-faint)] text-sm">Aucune session enregistrée pour ce projet.</p>
       ) : (
         <>
           <div className="flex flex-col gap-3">
             {sessions.slice(0, visibleCount).map((s) => (
-              <div key={s.id} className="border border-gray-800 rounded-lg p-4">
+              <div key={s.id} className="border border-[var(--border)] rounded-lg p-4">
                 <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-[var(--text-faint)]">
                     {formatSessionDateTime(s.date, s.heure_debut, s.heure_fin)}
                   </span>
-                  <span className="text-xs text-gray-400">{formatDurationMinutes(s.duree_minutes)}</span>
+                  <span className="text-xs text-[var(--text-faint)]">{formatDurationMinutes(s.duree_minutes)}</span>
                 </div>
                 <p className="font-bold mb-2">{s.tache}</p>
                 {Array.isArray(s.sites_bloques) && s.sites_bloques.length > 0 && (
@@ -269,7 +269,7 @@ export default function ProjectDetail() {
                     {s.sites_bloques.map((site) => (
                       <span
                         key={site}
-                        className="text-[11px] border border-gray-700 text-gray-400 rounded-full px-2 py-1"
+                        className="text-[11px] border border-[var(--border)] text-[var(--text-faint)] rounded-full px-2 py-1"
                       >
                         {site}
                       </span>
@@ -277,7 +277,7 @@ export default function ProjectDetail() {
                   </div>
                 )}
                 {s.completion_creee && habitudeLiee && (
-                  <span className="inline-block text-[11px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full px-2 py-1">
+                  <span className="inline-block text-[11px] bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/30 rounded-full px-2 py-1">
                     ✓ {habitudeLiee.nom} cochée
                   </span>
                 )}
@@ -289,7 +289,7 @@ export default function ProjectDetail() {
             <div className="text-center mt-6">
               <button
                 onClick={() => setVisibleCount((v) => v + SESSIONS_PAGE_SIZE)}
-                className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+                className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
               >
                 Afficher plus
               </button>

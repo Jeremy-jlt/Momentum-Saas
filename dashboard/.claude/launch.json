@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "momentum-dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "C:\\Users\\bruno\\Desktop\\momentum Saas\\dashboard",
+      "port": 5173
+    }
+  ]
+}

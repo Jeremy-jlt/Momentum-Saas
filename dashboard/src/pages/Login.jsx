@@ -39,14 +39,14 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-[80vh] px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8 justify-center">
-          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-          <span className="font-bold tracking-widest text-sm">MOMENTUM</span>
+          <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
+          <span className="font-bold tracking-widest text-sm text-[var(--text-strong)]">MOMENTUM</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-1">
+        <h1 className="text-2xl font-bold text-center mb-1 text-[var(--text-strong)]">
           {mode === 'signin' ? 'Connexion' : 'Inscription'}
         </h1>
-        <p className="text-gray-400 text-sm text-center mb-8">
+        <p className="text-[var(--text-faint)] text-sm text-center mb-8">
           {mode === 'signin'
             ? 'Reprends le contrôle de tes heures.'
             : "Crée ton compte pour commencer."}
@@ -54,42 +54,42 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Email</label>
+            <label className="block text-xs text-[var(--text-faint)] mb-1">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-transparent border border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              className="w-full bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
               placeholder="toi@exemple.com"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Mot de passe</label>
+            <label className="block text-xs text-[var(--text-faint)] mb-1">Mot de passe</label>
             <input
               type="password"
               required
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-transparent border border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              className="w-full bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
               placeholder="••••••••"
             />
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          {info && <p className="text-emerald-400 text-sm">{info}</p>}
+          {error && <p className="text-[var(--danger)] text-sm">{error}</p>}
+          {info && <p className="text-[var(--accent)] text-sm">{info}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md py-2 text-sm disabled:opacity-50"
+            className="mt-2 bg-[var(--accent)] hover:bg-[var(--accent-hover)] active:scale-[0.98] transition-[background-color,transform] text-[var(--accent-contrast)] font-bold rounded-md py-2 text-sm disabled:opacity-50"
           >
             {loading ? 'Patiente...' : mode === 'signin' ? 'Se connecter' : "S'inscrire"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-400 mt-6">
+        <p className="text-center text-sm text-[var(--text-faint)] mt-6">
           {mode === 'signin' ? "Pas encore de compte ?" : 'Déjà un compte ?'}{' '}
           <button
             onClick={() => {
@@ -97,7 +97,7 @@ export default function Login() {
               setError('')
               setInfo('')
             }}
-            className="text-emerald-500 hover:underline"
+            className="text-[var(--accent)] hover:underline"
           >
             {mode === 'signin' ? "S'inscrire" : 'Se connecter'}
           </button>

@@ -10,10 +10,10 @@ function ToastItem({ toast }) {
 
   return (
     <div
-      className="pointer-events-auto bg-[#1a1a1a] border-[0.5px] rounded-md px-4 py-3 text-[12px] shadow-lg max-w-xs"
+      className="pointer-events-auto bg-[var(--surface-1)] border-[0.5px] rounded-md px-4 py-3 text-[12px] shadow-lg max-w-xs"
       style={{
-        borderColor: isError ? '#ef4444' : '#10b981',
-        color: isError ? '#f87171' : '#34d399',
+        borderColor: isError ? 'var(--danger)' : 'var(--accent)',
+        color: isError ? 'var(--danger)' : 'var(--accent)',
         animation: `${toast.leaving ? 'toast-out' : 'toast-in'} 200ms ease-out forwards`,
       }}
     >

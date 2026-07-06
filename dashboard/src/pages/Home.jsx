@@ -31,11 +31,13 @@ export default function Home() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-      <h1 className="text-5xl md:text-6xl font-bold mb-4">Momentum</h1>
-      <p className="text-lg text-gray-300 mb-6">
+      <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-4 text-[var(--text-strong)]">
+        Momentum
+      </h1>
+      <p className="text-lg text-[var(--text-muted)] mb-6 text-balance">
         Chaque jour compte. Chaque distraction coûte.
       </p>
-      <p className="text-gray-400 max-w-xl mx-auto mb-10">
+      <p className="text-[var(--text-faint)] max-w-xl mx-auto mb-10 text-balance">
         Bloque les sites qui te distraient pendant tes sessions de travail sur
         ordinateur. Crée un engagement avec une mise symbolique, tiens ta
         promesse, et reprends le contrôle de tes heures de concentration.
@@ -44,22 +46,22 @@ export default function Home() {
       <div className="flex items-center justify-center gap-4 mb-10">
         <Link
           to={user ? '/new' : '/login'}
-          className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] active:scale-[0.98] transition-[background-color,transform] text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm"
         >
           Créer un engagement
         </Link>
         <Link
           to="/how-it-works"
-          className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-6 py-3 text-sm"
+          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] active:scale-[0.98] transition-[border-color,transform] rounded-md px-6 py-3 text-sm"
         >
           Comment ça marche ?
         </Link>
       </div>
 
       {user && ongoingCount > 0 && (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-[var(--text-faint)]">
           Tu as {ongoingCount} engagement{ongoingCount > 1 ? 's' : ''} en cours.{' '}
-          <Link to="/engagements" className="text-emerald-500 hover:underline">
+          <Link to="/engagements" className="text-[var(--accent)] hover:underline">
             Voir mes engagements
           </Link>
         </p>

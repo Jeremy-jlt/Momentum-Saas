@@ -4,9 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 
 const STATUS_STYLES = {
-  en_cours: { label: 'En cours', dot: 'bg-gray-400' },
-  reussi: { label: 'Réussi', dot: 'bg-emerald-500' },
-  echoue: { label: 'Échoué', dot: 'bg-red-500' },
+  en_cours: { label: 'En cours', dot: 'bg-[var(--text-subtle)]' },
+  reussi: { label: 'Réussi', dot: 'bg-[var(--accent)]' },
+  echoue: { label: 'Échoué', dot: 'bg-[var(--danger)]' },
 }
 
 export default function Engagements() {
@@ -39,7 +39,7 @@ export default function Engagements() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-24 text-center text-gray-400">
+      <div className="max-w-3xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
         Chargement...
       </div>
     )
@@ -49,12 +49,12 @@ export default function Engagements() {
     return (
       <div className="max-w-xl mx-auto px-6 py-24 text-center">
         <h1 className="text-2xl font-bold mb-2">Aucun engagement pour le moment</h1>
-        <p className="text-gray-400 mb-8">
+        <p className="text-[var(--text-faint)] mb-8">
           Le premier pas vers plus de concentration commence maintenant.
         </p>
         <Link
           to="/new"
-          className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm"
         >
           Créer un engagement
         </Link>
@@ -72,13 +72,13 @@ export default function Engagements() {
           return (
             <div
               key={eng.id}
-              className="border border-gray-800 rounded-lg p-5 flex flex-col gap-3"
+              className="border border-[var(--border)] rounded-lg p-5 flex flex-col gap-3"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className={`w-2 h-2 rounded-full ${status.dot}`} />
-                    <span className="text-xs text-gray-400">{status.label}</span>
+                    <span className="text-xs text-[var(--text-faint)]">{status.label}</span>
                   </div>
                   <h2 className="font-bold text-lg">{eng.nom}</h2>
                 </div>
@@ -86,21 +86,21 @@ export default function Engagements() {
                   {eng.statut === 'en_cours' && (
                     <Link
                       to={`/verify?id=${eng.id}`}
-                      className="text-xs border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-3 py-2"
+                      className="text-xs border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-3 py-2"
                     >
                       Vérifier
                     </Link>
                   )}
                   <button
                     onClick={() => handleDelete(eng.id)}
-                    className="text-xs border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-3 py-2"
+                    className="text-xs border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-3 py-2"
                   >
                     Supprimer
                   </button>
                 </div>
               </div>
 
-              <div className="text-sm text-gray-400 flex flex-wrap gap-x-6 gap-y-1">
+              <div className="text-sm text-[var(--text-faint)] flex flex-wrap gap-x-6 gap-y-1">
                 <span>{eng.duree_jours} jours</span>
                 <span>{eng.mise_euros} €</span>
                 <span>
@@ -116,7 +116,7 @@ export default function Engagements() {
                   {eng.sites_bloques.map((site) => (
                     <span
                       key={site}
-                      className="text-xs border border-gray-700 text-gray-300 rounded-full px-3 py-1"
+                      className="text-xs border border-[var(--border)] text-[var(--text-muted)] rounded-full px-3 py-1"
                     >
                       {site}
                     </span>

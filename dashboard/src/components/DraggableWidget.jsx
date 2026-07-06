@@ -25,7 +25,7 @@ export default function DraggableWidget({ id, children }) {
       {isDragging && (
         <div
           className="absolute inset-0 rounded-lg pointer-events-none"
-          style={{ boxShadow: '0 0 0 2px #10b981' }}
+          style={{ boxShadow: '0 0 0 2px var(--accent)' }}
         />
       )}
 
@@ -34,7 +34,7 @@ export default function DraggableWidget({ id, children }) {
         {...attributes}
         {...listeners}
         style={{ touchAction: 'none', padding: '4px 6px' }}
-        className="absolute top-2 left-2 z-20 rounded bg-[#1a1a1a] border border-[#374151] text-[#6b7280] text-sm leading-none cursor-grab active:cursor-grabbing opacity-0 group-hover/widget:opacity-100 transition-opacity"
+        className="absolute top-2 left-2 z-20 rounded bg-[var(--surface-1)] border border-[var(--border-strong)] text-[var(--text-faint)] text-sm leading-none cursor-grab active:cursor-grabbing opacity-0 group-hover/widget:opacity-100 transition-opacity"
         aria-label="Réorganiser cette section"
       >
         ⠿

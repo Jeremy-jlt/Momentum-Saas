@@ -13,6 +13,12 @@
       rel="stylesheet"
     />
     <title>Momentum</title>
+    <script>
+      (function () {
+        var stored = localStorage.getItem('momentum-theme')
+        document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark'
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

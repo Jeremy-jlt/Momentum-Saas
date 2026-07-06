@@ -8,8 +8,8 @@ import { useState } from 'react'
 // Seule couleur verte autorisée pour une coche dans toute l'app — jamais une
 // classe Tailwind (bg-emerald-*, bg-green-*), pour garantir un vert identique
 // partout, y compris pour les nuances de heatmap Pro.
-const CHECKED_GREEN = '#10b981'
-const CHECKED_GREEN_HOVER = '#0d9368'
+const CHECKED_GREEN = 'var(--accent)'
+const CHECKED_GREEN_HOVER = 'var(--accent-hover)'
 
 export default function HabitCell({
   state,
@@ -26,9 +26,9 @@ export default function HabitCell({
 
   const stateClass = {
     checked: 'text-white font-bold cursor-pointer',
-    unchecked: 'bg-[#1f2937] hover:bg-[#2a2a2a] cursor-pointer',
-    missed: 'bg-[#7f1d1d] hover:bg-[#991b1b] text-white cursor-pointer',
-    future: 'bg-[#111827] opacity-40 cursor-not-allowed',
+    unchecked: 'bg-[var(--cell-empty)] hover:bg-[var(--cell-empty-hover)] cursor-pointer',
+    missed: 'bg-[var(--danger)] hover:bg-[var(--danger-strong)] text-white cursor-pointer',
+    future: 'bg-[var(--cell-future)] opacity-40 cursor-not-allowed',
     custom: 'text-white cursor-pointer',
   }[state]
 
@@ -77,7 +77,7 @@ export default function HabitCell({
       {rippling && (
         <span
           className="absolute inset-0 rounded-full pointer-events-none"
-          style={{ background: '#10b981', animation: 'ripple 400ms ease-out forwards' }}
+          style={{ background: 'var(--accent)', animation: 'ripple 400ms ease-out forwards' }}
         />
       )}
       {content}

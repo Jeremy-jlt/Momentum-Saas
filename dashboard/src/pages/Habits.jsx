@@ -80,12 +80,12 @@ function defaultWidgetState() {
 
 const chartTooltipStyle = {
   contentStyle: {
-    background: '#141414',
-    border: '1px solid #2a2a2a',
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
     borderRadius: 8,
     fontSize: 12,
   },
-  labelStyle: { color: '#9ca3af' },
+  labelStyle: { color: 'var(--text-muted)' },
 }
 
 function moodColor(score) {
@@ -94,11 +94,11 @@ function moodColor(score) {
   if (score <= 5) return '#f97316'
   if (score <= 7) return '#eab308'
   if (score <= 9) return '#84cc16'
-  return '#10b981'
+  return 'var(--accent)'
 }
 
 function ringColor(percent) {
-  if (percent >= 80) return '#10b981'
+  if (percent >= 80) return 'var(--accent)'
   if (percent >= 50) return '#6366f1'
   return '#374151'
 }
@@ -112,20 +112,94 @@ function truncateLabel(text, max = 15) {
 // et barres horizontales — volontairement distincte de ringColor (anneaux
 // hebdomadaires), qui utilise vert/indigo/gris.
 function percentColor(percent) {
-  if (percent >= 80) return '#10b981'
+  if (percent >= 80) return 'var(--accent)'
   if (percent >= 50) return '#eab308'
   return '#ef4444'
 }
 
+const RING_CATEGORY_RADII = [60, 48, 36, 24]
+
+// Niveau module pour les mêmes raisons que RingProgress/ProgressRing : ce
+// composant a besoin de son propre état pour animer le remplissage des
+// anneaux (0 -> percent) à chaque montage, ce qu'une simple fonction
+// `renderXxx()` appelée en ligne ne permettrait pas (pas de hooks).
+function CategoryRingsChart({ cats, size = 140 }) {
+  const center = size / 2
+  const [animatedPercents, setAnimatedPercents] = useState(() => cats.map(() => 0))
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setAnimatedPercents(cats.map((c) => c.percent)))
+    return () => cancelAnimationFrame(raf)
+  }, [cats])
+
+  return (
+    <div className="flex items-center justify-center gap-8 py-2">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+        {cats.map((cat, i) => {
+          const radius = RING_CATEGORY_RADII[i]
+          const circumference = 2 * Math.PI * radius
+          const animated = animatedPercents[i] ?? 0
+          const offset = circumference * (1 - Math.min(animated, 100) / 100)
+          const color = percentColor(cat.percent)
+          return (
+            <g key={cat.categorie}>
+              <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--cell-empty)" strokeWidth={8} />
+              <circle
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke={color}
+                strokeWidth={8}
+                strokeDasharray={circumference}
+                strokeDashoffset={offset}
+                strokeLinecap="round"
+                className="transition-[stroke-dashoffset] duration-[800ms] ease-out"
+                transform={`rotate(-90 ${center} ${center})`}
+              />
+            </g>
+          )
+        })}
+      </svg>
+      <div className="flex flex-col gap-2.5">
+        {cats.map((cat) => (
+          <div key={cat.categorie} className="flex items-center gap-2">
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ background: percentColor(cat.percent) }}
+            />
+            <span className="text-xs text-[var(--text-muted)]">{cat.categorie}</span>
+            <span className="text-xs font-bold" style={{ color: percentColor(cat.percent) }}>
+              <AnimatedNumber value={cat.percent} suffix="%" />
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function RingProgress({ size, radius, strokeWidth, percent, color, children }) {
   const circumference = 2 * Math.PI * radius
-  const offset = circumference * (1 - Math.min(Math.max(percent, 0), 100) / 100)
   const center = size / 2
+
+  // Démarre à 0 puis rejoint `percent` une frame après le montage : la
+  // transition CSS sur strokeDashoffset se charge de l'animation de
+  // remplissage, y compris à chaque changement de disposition/type de
+  // graphique qui remonte ce composant.
+  const [animatedPercent, setAnimatedPercent] = useState(0)
+
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setAnimatedPercent(percent))
+    return () => cancelAnimationFrame(raf)
+  }, [percent])
+
+  const offset = circumference * (1 - Math.min(Math.max(animatedPercent, 0), 100) / 100)
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={center} cy={center} r={radius} fill="none" stroke="#1f2937" strokeWidth={strokeWidth} />
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--cell-empty)" strokeWidth={strokeWidth} />
         <circle
           cx={center}
           cy={center}
@@ -136,6 +210,7 @@ function RingProgress({ size, radius, strokeWidth, percent, color, children }) {
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           strokeLinecap="round"
+          className="transition-[stroke-dashoffset] duration-[800ms] ease-out"
           transform={`rotate(-90 ${center} ${center})`}
         />
       </svg>
@@ -178,17 +253,17 @@ function ProgressRing({ percent, label, size = 84, index = 0, animate = false })
             animationBegin={index * 100}
           >
             <Cell fill={ringColor(percent)} />
-            <Cell fill="#1f2937" />
+            <Cell fill="var(--cell-empty)" />
           </Pie>
         </PieChart>
         <div
           className="absolute inset-0 flex items-center justify-center font-bold transition-[font-size] duration-150"
           style={{ fontSize }}
         >
-          {percent}%
+          <AnimatedNumber value={percent} suffix="%" />
         </div>
       </div>
-      <span className="text-gray-500" style={{ fontSize: labelSize }}>
+      <span className="text-[var(--text-faint)]" style={{ fontSize: labelSize }}>
         {label}
       </span>
     </div>
@@ -201,7 +276,7 @@ function MoodPopover({ initialScore, onSave, onCancel }) {
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onCancel} />
-      <div className="absolute z-50 bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4 w-56 shadow-lg">
+      <div className="absolute z-50 bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg p-4 w-56 shadow-lg">
         <p className="text-2xl font-bold text-center mb-3" style={{ color: moodColor(value) }}>
           {value}
         </p>
@@ -216,13 +291,13 @@ function MoodPopover({ initialScore, onSave, onCancel }) {
         <div className="flex items-center gap-2 justify-end">
           <button
             onClick={onCancel}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-3 py-1.5 text-xs"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-3 py-1.5 text-xs"
           >
             Annuler
           </button>
           <button
             onClick={() => onSave(value)}
-            className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-3 py-1.5 text-xs"
+            className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-black font-bold rounded-md px-3 py-1.5 text-xs"
           >
             Enregistrer
           </button>
@@ -265,21 +340,60 @@ function ChartTypeButton({ type, icon, label, active, locked, onSelect }) {
         disabled={locked}
         className={`w-7 h-7 rounded-md flex items-center justify-center text-xs border transition-[background-color,border-color] duration-[120ms] ${transformClass} ${
           locked
-            ? 'bg-[#1a1a1a] border-gray-800 text-gray-700 cursor-not-allowed'
+            ? 'bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-subtle)] cursor-not-allowed'
             : active
-              ? 'bg-emerald-500 border-emerald-500 text-black'
-              : 'bg-[#1a1a1a] border-gray-700 text-white hover:bg-[#1f1f1f]'
+              ? 'bg-[var(--accent)] border-[var(--accent)] text-black'
+              : 'bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-strong)] hover:bg-[var(--border-faint)]'
         }`}
       >
         {icon}
       </button>
 
       <span
-        className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#111111] text-[#9ca3af] text-[11px] rounded px-2 py-1 opacity-0 pointer-events-none transition-opacity group-hover/tooltip:opacity-100 group-hover/tooltip:delay-[400ms]"
+        className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[var(--surface-1)] text-[var(--text-muted)] text-[11px] rounded px-2 py-1 opacity-0 pointer-events-none transition-opacity group-hover/tooltip:opacity-100 group-hover/tooltip:delay-[400ms]"
       >
         {locked ? 'Pro 🔒' : label}
       </span>
     </div>
+  )
+}
+
+// Compte de la valeur précédente vers la nouvelle (easing cubique, ~600ms) à
+// chaque changement de `value` — rejoue naturellement au montage (donc à
+// chaque changement de disposition, qui démonte/remonte tout via sa key) en
+// partant de 0, et anime aussi les variations en cours de session (coche
+// cochée/décochée) sans logique supplémentaire.
+function AnimatedNumber({ value, decimals = 0, suffix = '' }) {
+  const [display, setDisplay] = useState(0)
+  const fromRef = useRef(0)
+
+  useEffect(() => {
+    const from = fromRef.current
+    const to = value
+    const duration = 600
+    const start = performance.now()
+    let raf
+
+    const tick = (now) => {
+      const progress = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(from + (to - from) * eased)
+      if (progress < 1) {
+        raf = requestAnimationFrame(tick)
+      } else {
+        fromRef.current = to
+      }
+    }
+
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value])
+
+  return (
+    <>
+      {display.toFixed(decimals)}
+      {suffix}
+    </>
   )
 }
 
@@ -295,9 +409,9 @@ function AnimatedProgressBar({ target }) {
   }, [target])
 
   return (
-    <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+    <div className="w-full h-1.5 bg-[var(--surface-3)] rounded-full overflow-hidden">
       <div
-        className="h-full bg-emerald-500 rounded-full transition-[width] duration-[600ms] ease-out"
+        className="h-full bg-[var(--accent)] rounded-full transition-[width] duration-[600ms] ease-out"
         style={{ width: `${width}%` }}
       />
     </div>
@@ -534,8 +648,8 @@ export default function Habits() {
   const heatmapBackground = (habitudeId, dateISO) => {
     const streakLength = consecutiveStreakEndingAt(habitudeId, dateISO)
     if (streakLength >= 6) return '#047857'
-    if (streakLength >= 3) return '#059669'
-    return '#10b981'
+    if (streakLength >= 3) return 'var(--accent-hover)'
+    return 'var(--accent)'
   }
 
   const todayCompletedCount = completionsByDate.get(todayISO) || 0
@@ -856,10 +970,10 @@ export default function Habits() {
   }
 
   const columnPercentColorClass = (pct) => {
-    if (pct === null) return 'text-gray-700'
-    if (pct === 0) return 'text-red-500/70'
-    if (pct >= 80) return 'text-emerald-400'
-    return 'text-gray-500'
+    if (pct === null) return 'text-[var(--text-subtle)]'
+    if (pct === 0) return 'text-[var(--danger)]/70'
+    if (pct >= 80) return 'text-[var(--accent)]'
+    return 'text-[var(--text-faint)]'
   }
 
   const gridMonthRate = useMemo(() => {
@@ -926,7 +1040,7 @@ export default function Habits() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-24 text-center text-gray-400">
+      <div className="max-w-5xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
         Chargement...
       </div>
     )
@@ -936,12 +1050,12 @@ export default function Habits() {
     return (
       <div className="max-w-xl mx-auto px-6 py-24 text-center">
         <h1 className="text-2xl font-bold mb-2">Aucune habitude pour le moment</h1>
-        <p className="text-gray-400 mb-8">
+        <p className="text-[var(--text-faint)] mb-8">
           Choisis un point de départ pour commencer à suivre tes habitudes.
         </p>
         <Link
           to="/habits/templates"
-          className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
         >
           Choisir un template
         </Link>
@@ -955,10 +1069,10 @@ export default function Habits() {
   const renderWidget = (id, content, { proOnly = false, lockedTitle = '', lockedDescription = '' } = {}) => {
     if (proOnly && !isPro) {
       return (
-        <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-8 text-center mb-10">
+        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-8 text-center mb-10">
           <p className="text-2xl mb-2">🔒</p>
           <p className="font-bold mb-1">{lockedTitle}</p>
-          <p className="text-sm text-gray-500">{lockedDescription}</p>
+          <p className="text-sm text-[var(--text-faint)]">{lockedDescription}</p>
         </div>
       )
     }
@@ -972,7 +1086,7 @@ export default function Habits() {
         <button
           onClick={() => hideWidget(id)}
           title="Masquer ce widget"
-          className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-[#1a1a1a] border border-gray-700 text-gray-400 text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-[var(--surface-1)] border border-[var(--border)] text-[var(--text-faint)] text-xs leading-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
         >
           ×
         </button>
@@ -983,65 +1097,84 @@ export default function Habits() {
 
   const renderStatCards = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5">
-        <p className="text-3xl font-bold text-emerald-500 mb-1">{monthStats.rate}%</p>
-        <p className="text-xs text-gray-500">ce mois</p>
+      <div
+        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
+        style={{ animationDelay: '0ms', animationFillMode: 'backwards' }}
+      >
+        <p className="text-3xl font-bold text-[var(--accent)] mb-1">
+          <AnimatedNumber value={monthStats.rate} suffix="%" />
+        </p>
+        <p className="text-xs text-[var(--text-faint)]">ce mois</p>
       </div>
 
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5">
+      <div
+        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
+        style={{ animationDelay: '80ms', animationFillMode: 'backwards' }}
+      >
         <p
           className={`text-3xl font-bold mb-1 inline-block ${
             streak > 0 ? 'animate-[pulse-subtle_2s_ease-in-out_infinite]' : ''
           }`}
         >
-          {streak}
+          <AnimatedNumber value={streak} />
         </p>
-        <p className="text-xs text-gray-500">🔥 jours consécutifs</p>
+        <p className="text-xs text-[var(--text-faint)]">🔥 jours consécutifs</p>
       </div>
 
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5">
+      <div
+        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
+        style={{ animationDelay: '160ms', animationFillMode: 'backwards' }}
+      >
         <p className="text-3xl font-bold mb-1">
-          {todayCompletedCount}/{totalHabitudes}
+          <AnimatedNumber value={todayCompletedCount} />/{totalHabitudes}
         </p>
-        <p className="text-xs text-gray-500 mb-3">aujourd'hui</p>
+        <p className="text-xs text-[var(--text-faint)] mb-3">aujourd'hui</p>
         <AnimatedProgressBar target={todayPercent} />
       </div>
     </div>
   )
 
   const renderCondensedStats = () => (
-    <div className="text-sm text-gray-300 mb-6 flex items-center gap-2 flex-wrap">
+    <div
+      className="text-sm text-[var(--text-muted)] mb-6 flex items-center gap-2 flex-wrap animate-[slide-up_300ms_ease-out]"
+      style={{ animationFillMode: 'backwards' }}
+    >
       <span>
-        Mois: <strong className="text-emerald-500">{monthStats.rate}%</strong>
+        Mois:{' '}
+        <strong className="text-[var(--accent)]">
+          <AnimatedNumber value={monthStats.rate} suffix="%" />
+        </strong>
       </span>
-      <span className="text-gray-700">·</span>
+      <span className="text-[var(--text-subtle)]">·</span>
       <span>
-        Streak: <strong>{streak}</strong>🔥
+        Streak: <strong><AnimatedNumber value={streak} /></strong>🔥
       </span>
-      <span className="text-gray-700">·</span>
+      <span className="text-[var(--text-subtle)]">·</span>
       <span>
-        Aujourd'hui: <strong>{todayCompletedCount}/{totalHabitudes}</strong>
+        Aujourd'hui: <strong><AnimatedNumber value={todayCompletedCount} />/{totalHabitudes}</strong>
       </span>
     </div>
   )
 
   const renderRingsSection = (size = 84, stacked = false) => (
     <div
-      className={`bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 mb-10 flex gap-6 ${
+      className={`bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 mb-10 flex gap-6 ${
         stacked ? 'flex-col' : 'items-center overflow-x-auto'
       }`}
     >
       <div
         className={`flex flex-col justify-center gap-1.5 shrink-0 ${
-          stacked ? 'pb-4 border-b border-gray-800' : 'pr-6 border-r border-gray-800'
+          stacked ? 'pb-4 border-b border-[var(--border)]' : 'pr-6 border-r border-[var(--border)]'
         }`}
       >
-        <p className="text-[10px] uppercase tracking-widest text-gray-500">Summary</p>
+        <p className="text-[10px] uppercase tracking-widest text-[var(--text-faint)]">Summary</p>
         <p className="text-2xl font-bold">
-          {monthStats.completed}
-          <span className="text-xs text-gray-500 font-normal"> complétées</span>
+          <AnimatedNumber value={monthStats.completed} />
+          <span className="text-xs text-[var(--text-faint)] font-normal"> complétées</span>
         </p>
-        <p className="text-xs text-gray-500">/ {monthStats.expected} attendues</p>
+        <p className="text-xs text-[var(--text-faint)]">
+          / <AnimatedNumber value={monthStats.expected} /> attendues
+        </p>
         <div className="relative w-16 h-16 mt-1">
           <PieChart width={64} height={64}>
             <Pie
@@ -1054,7 +1187,7 @@ export default function Habits() {
               stroke="none"
               isAnimationActive={false}
             >
-              <Cell fill="#10b981" />
+              <Cell fill="var(--accent)" />
             </Pie>
           </PieChart>
         </div>
@@ -1106,25 +1239,25 @@ export default function Habits() {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={goToPrevMonth}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md w-8 h-8 flex items-center justify-center text-sm"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md w-8 h-8 flex items-center justify-center text-sm"
           >
             &lt;
           </button>
           <p className="text-sm font-bold">{formatMonthLabel(viewYear, viewMonth)}</p>
           <button
             onClick={goToNextMonth}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md w-8 h-8 flex items-center justify-center text-sm"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md w-8 h-8 flex items-center justify-center text-sm"
           >
             &gt;
           </button>
         </div>
 
-        <div className="overflow-x-auto mb-12 border border-gray-800 rounded-lg">
+        <div className="overflow-x-auto mb-12 border border-[var(--border)] rounded-lg">
           <table className={`${tableFont} border-collapse`}>
             <thead>
               <tr>
                 <th
-                  className={`sticky left-0 bg-[#0a0a0a] text-left px-3 py-2 ${nameMinW} border-b border-gray-900`}
+                  className={`sticky left-0 bg-[var(--surface-0)] text-left px-3 py-2 ${nameMinW} border-b border-[var(--border)]`}
                 >
                   Habitude
                 </th>
@@ -1137,48 +1270,48 @@ export default function Habits() {
                   return (
                     <th
                       key={day}
-                      className={`px-0.5 pt-1.5 pb-1 text-center border-b border-gray-900 ${colWidth} ${
-                        isToday ? 'bg-[#1a1a1a]' : ''
+                      className={`px-0.5 pt-1.5 pb-1 text-center border-b border-[var(--border)] ${colWidth} ${
+                        isToday ? 'bg-[var(--surface-1)]' : ''
                       }`}
                     >
                       <div className="flex flex-col items-center leading-tight">
                         <span
                           className={
                             isToday
-                              ? 'text-emerald-400 font-bold'
+                              ? 'text-[var(--accent)] font-bold'
                               : isFuture
-                                ? 'text-[#374151]'
+                                ? 'text-[var(--text-subtle)]'
                                 : isWeekend
-                                  ? 'text-gray-400'
-                                  : 'text-gray-500'
+                                  ? 'text-[var(--text-faint)]'
+                                  : 'text-[var(--text-faint)]'
                           }
                         >
                           {day}
                         </span>
-                        <span className="text-[8px] text-gray-600">{dayLabel}</span>
+                        <span className="text-[8px] text-[var(--text-subtle)]">{dayLabel}</span>
                       </div>
                     </th>
                   )
                 })}
-                <th className="px-3 py-2 text-center border-b border-gray-900 text-gray-500">%</th>
+                <th className="px-3 py-2 text-center border-b border-[var(--border)] text-[var(--text-faint)]">%</th>
               </tr>
               <tr>
-                <th className="sticky left-0 bg-[#0a0a0a] border-b border-gray-800" />
+                <th className="sticky left-0 bg-[var(--surface-0)] border-b border-[var(--border)]" />
                 {dayNumbers.map((day) => {
                   const isToday = isCurrentMonthView && day === today.getDate()
                   const pct = columnPercent(day)
                   return (
                     <th
                       key={day}
-                      className={`px-0.5 pb-1 text-center font-normal text-[10px] border-b border-gray-800 ${columnPercentColorClass(pct)} ${
-                        isToday ? 'bg-[#1a1a1a]' : ''
+                      className={`px-0.5 pb-1 text-center font-normal text-[10px] border-b border-[var(--border)] ${columnPercentColorClass(pct)} ${
+                        isToday ? 'bg-[var(--surface-1)]' : ''
                       }`}
                     >
                       {pct === null ? '' : `${pct}%`}
                     </th>
                   )
                 })}
-                <th className="border-b border-gray-800" />
+                <th className="border-b border-[var(--border)]" />
               </tr>
             </thead>
             <tbody>
@@ -1190,20 +1323,20 @@ export default function Habits() {
                   : 0
                 const atteint = stats.count >= objectif
                 const enBonneVoie = !atteint && stats.count >= expectedPace * 0.8
-                const barColor = atteint ? 'bg-emerald-500' : enBonneVoie ? 'bg-orange-500' : 'bg-gray-600'
+                const barColor = atteint ? 'bg-[var(--accent)]' : enBonneVoie ? 'bg-orange-500' : 'bg-[var(--surface-3)]'
                 const barWidth = Math.min(100, Math.round((stats.count / objectif) * 100))
 
                 const linkedProjets = projetsByHabitudeId.get(h.id) || []
 
                 return (
-                  <tr key={h.id} className="hover:bg-[#111111]">
-                    <td className="sticky left-0 bg-[#0a0a0a] px-3 py-1.5 border-b border-gray-900">
+                  <tr key={h.id} className="hover:bg-[var(--surface-1)]">
+                    <td className="sticky left-0 bg-[var(--surface-0)] px-3 py-1.5 border-b border-[var(--border)]">
                       <div className="relative flex items-center gap-2">
                         <span>{h.emoji}</span>
                         <div>
-                          <p className="text-gray-200">{compact ? truncateLabel(h.nom) : h.nom}</p>
+                          <p className="text-[var(--text-muted)]">{compact ? truncateLabel(h.nom) : h.nom}</p>
                           {!compact && h.categorie && (
-                            <p className="text-[10px] text-gray-500">{h.categorie}</p>
+                            <p className="text-[10px] text-[var(--text-faint)]">{h.categorie}</p>
                           )}
                         </div>
                         {linkedProjets.length > 0 && (
@@ -1213,7 +1346,7 @@ export default function Habits() {
                               setOpenProjectPopoverId(openProjectPopoverId === h.id ? null : h.id)
                             }
                             title="Projets liés"
-                            className="text-gray-600 hover:text-gray-300 text-xs shrink-0"
+                            className="text-[var(--text-subtle)] hover:text-[var(--text-muted)] text-xs shrink-0"
                           >
                             📁
                           </button>
@@ -1224,8 +1357,8 @@ export default function Habits() {
                               className="fixed inset-0 z-40"
                               onClick={() => setOpenProjectPopoverId(null)}
                             />
-                            <div className="absolute z-50 top-full mt-1 left-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 w-56 shadow-lg">
-                              <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-2">
+                            <div className="absolute z-50 top-full mt-1 left-0 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg p-3 w-56 shadow-lg">
+                              <p className="text-[10px] uppercase tracking-wide text-[var(--text-faint)] mb-2">
                                 Projets liés
                               </p>
                               <div className="flex flex-col gap-2 mb-2">
@@ -1235,13 +1368,13 @@ export default function Habits() {
                                       className="w-2 h-2 rounded-full shrink-0"
                                       style={{ background: p.couleur }}
                                     />
-                                    <span className="text-gray-200">{p.nom}</span>
+                                    <span className="text-[var(--text-muted)]">{p.nom}</span>
                                   </div>
                                 ))}
                               </div>
                               <Link
                                 to={`/projects/${linkedProjets[0].id}`}
-                                className="text-xs text-emerald-500 hover:underline"
+                                className="text-xs text-[var(--accent)] hover:underline"
                               >
                                 Voir les sessions →
                               </Link>
@@ -1269,8 +1402,8 @@ export default function Habits() {
                       return (
                         <td
                           key={day}
-                          className={`${cellPad} text-center border-b border-gray-900 ${
-                            isToday ? 'bg-[#1a1a1a]' : ''
+                          className={`${cellPad} text-center border-b border-[var(--border)] ${
+                            isToday ? 'bg-[var(--surface-1)]' : ''
                           }`}
                         >
                           <HabitCell
@@ -1286,7 +1419,7 @@ export default function Habits() {
                       )
                     })}
                     <td
-                      className={`px-3 py-1.5 text-center border-b border-gray-900 text-gray-400 min-w-[70px] ${percentFont}`}
+                      className={`px-3 py-1.5 text-center border-b border-[var(--border)] text-[var(--text-faint)] min-w-[70px] ${percentFont}`}
                     >
                       {stats.percent === null ? (
                         '—'
@@ -1297,7 +1430,7 @@ export default function Habits() {
                           <span className={compact ? 'text-[10px]' : 'text-[11px]'}>
                             {stats.count}/{objectif}
                           </span>
-                          <div className="w-14 h-1 bg-gray-800 rounded-full overflow-hidden">
+                          <div className="w-14 h-1 bg-[var(--surface-3)] rounded-full overflow-hidden">
                             <div
                               className={`h-full ${barColor}`}
                               style={{ width: `${barWidth}%` }}
@@ -1313,15 +1446,15 @@ export default function Habits() {
               {/* Ligne humeur — Premium, en bas du tableau */}
               {showMoodRow && (
                 <tr
-                  className={`border-t-2 border-gray-700 transition-opacity duration-200 ${
+                  className={`border-t-2 border-[var(--border)] transition-opacity duration-200 ${
                     fadingWidgets.mood_row ? 'opacity-0' : !isPro ? 'opacity-40' : 'opacity-100'
                   }`}
                 >
-                  <td className="sticky left-0 bg-[#0a0a0a] px-3 py-3 border-t-2 border-gray-700">
+                  <td className="sticky left-0 bg-[var(--surface-0)] px-3 py-3 border-t-2 border-[var(--border)]">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-200">😊 Humeur</span>
+                      <span className="text-[var(--text-muted)]">😊 Humeur</span>
                       {!isPro && (
-                        <span className="text-[9px] border border-gray-700 text-gray-400 rounded-full px-1.5 py-0.5">
+                        <span className="text-[9px] border border-[var(--border)] text-[var(--text-faint)] rounded-full px-1.5 py-0.5">
                           Pro 🔒
                         </span>
                       )}
@@ -1329,7 +1462,7 @@ export default function Habits() {
                         <button
                           onClick={() => hideWidget('mood_row')}
                           title="Masquer cette ligne"
-                          className="text-gray-600 hover:text-gray-300 text-xs ml-1"
+                          className="text-[var(--text-subtle)] hover:text-[var(--text-muted)] text-xs ml-1"
                         >
                           ×
                         </button>
@@ -1348,8 +1481,8 @@ export default function Habits() {
                     return (
                       <td
                         key={day}
-                        className={`relative px-0.5 py-2.5 text-center border-t-2 border-gray-700 ${
-                          isToday ? 'bg-[#1a1a1a]' : ''
+                        className={`relative px-0.5 py-2.5 text-center border-t-2 border-[var(--border)] ${
+                          isToday ? 'bg-[var(--surface-1)]' : ''
                         }`}
                       >
                         <HabitCell
@@ -1369,13 +1502,13 @@ export default function Habits() {
                       </td>
                     )
                   })}
-                  <td className="border-t-2 border-gray-700" />
+                  <td className="border-t-2 border-[var(--border)]" />
                 </tr>
               )}
             </tbody>
             <tfoot>
               <tr>
-                <td className="sticky left-0 bg-[#0a0a0a] px-3 py-2 text-gray-400 font-bold">
+                <td className="sticky left-0 bg-[var(--surface-0)] px-3 py-2 text-[var(--text-faint)] font-bold">
                   Mois : {gridMonthRate}%
                 </td>
                 <td colSpan={numDays + 1} />
@@ -1429,10 +1562,10 @@ export default function Habits() {
     <div className="flex flex-col gap-3 py-2">
       {habitudeMonthStats.map((h) => (
         <div key={h.id} className="flex items-center gap-3">
-          <span className="text-xs text-gray-300 w-[140px] shrink-0 truncate">
+          <span className="text-xs text-[var(--text-muted)] w-[140px] shrink-0 truncate">
             {h.emoji} {h.nom}
           </span>
-          <div className="flex-1 h-1.5 bg-[#1f2937] rounded overflow-hidden">
+          <div className="flex-1 h-1.5 bg-[var(--cell-empty)] rounded overflow-hidden">
             <div
               className="h-full rounded"
               style={{ width: `${h.percent}%`, background: percentColor(h.percent) }}
@@ -1453,16 +1586,16 @@ export default function Habits() {
     <div className="flex flex-col gap-3.5 py-2">
       {categoryBreakdown.map((row) => (
         <div key={row.categorie} className="flex items-center gap-3">
-          <span className="text-[11px] uppercase tracking-wide text-gray-400 w-[100px] shrink-0 truncate">
+          <span className="text-[11px] uppercase tracking-wide text-[var(--text-faint)] w-[100px] shrink-0 truncate">
             {row.categorie}
           </span>
-          <div className="flex-1 h-1.5 bg-[#1f2937] rounded overflow-hidden">
+          <div className="flex-1 h-1.5 bg-[var(--cell-empty)] rounded overflow-hidden">
             <div
               className="h-full rounded"
               style={{ width: `${row.percent}%`, background: percentColor(row.percent) }}
             />
           </div>
-          <span className="text-[11px] text-gray-500 w-[60px] shrink-0 text-right">
+          <span className="text-[11px] text-[var(--text-faint)] w-[60px] shrink-0 text-right">
             {row.completedEquivalent} / {row.numDaysMonth} j
           </span>
         </div>
@@ -1483,7 +1616,7 @@ export default function Habits() {
         >
           {badgeLabel}
         </span>
-        <span className="text-xs text-gray-200 truncate flex-1">
+        <span className="text-xs text-[var(--text-muted)] truncate flex-1">
           {h.emoji} {h.nom}
         </span>
         <span className="text-xs font-semibold shrink-0" style={{ color: badgeColor }}>
@@ -1495,12 +1628,12 @@ export default function Habits() {
     return (
       <div className="grid grid-cols-2 gap-5 py-2">
         <div className="flex flex-col gap-2.5">
-          <p className="text-xs text-gray-500 mb-1">Top ce mois</p>
-          {top3.map((h) => renderRow(h, 'TOP', '#052e1f', '#10b981'))}
+          <p className="text-xs text-[var(--text-faint)] mb-1">Top ce mois</p>
+          {top3.map((h) => renderRow(h, 'TOP', 'var(--accent-contrast)', 'var(--accent)'))}
         </div>
-        <div className="flex flex-col gap-2.5 border-l-[0.5px] border-[#1f1f1f] pl-5">
-          <p className="text-xs text-gray-500 mb-1">Flop ce mois</p>
-          {flop3.map((h) => renderRow(h, 'FLOP', '#2d0a0a', '#ef4444'))}
+        <div className="flex flex-col gap-2.5 border-l-[0.5px] border-[var(--border-faint)] pl-5">
+          <p className="text-xs text-[var(--text-faint)] mb-1">Flop ce mois</p>
+          {flop3.map((h) => renderRow(h, 'FLOP', 'var(--danger-bg)', '#ef4444'))}
         </div>
       </div>
     )
@@ -1517,11 +1650,13 @@ export default function Habits() {
             percent={h.percent}
             color={percentColor(h.percent)}
           >
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#f5f5f5' }}>{h.percent}%</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-strong)' }}>
+              <AnimatedNumber value={h.percent} suffix="%" />
+            </span>
           </RingProgress>
           <span
             className="text-center truncate w-full"
-            style={{ fontSize: 10, color: '#6b7280' }}
+            style={{ fontSize: 10, color: 'var(--text-faint)' }}
             title={`${h.emoji} ${h.nom}`}
           >
             {h.emoji} {truncateLabel(h.nom, 12)}
@@ -1531,57 +1666,9 @@ export default function Habits() {
     </div>
   )
 
-  const RING_CATEGORY_RADII = [60, 48, 36, 24]
-
-  const renderChartRingsCategories = () => {
-    const cats = categoryBreakdown.slice(0, 4)
-    const size = 140
-    const center = size / 2
-
-    return (
-      <div className="flex items-center justify-center gap-8 py-2">
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
-          {cats.map((cat, i) => {
-            const radius = RING_CATEGORY_RADII[i]
-            const circumference = 2 * Math.PI * radius
-            const offset = circumference * (1 - Math.min(cat.percent, 100) / 100)
-            const color = percentColor(cat.percent)
-            return (
-              <g key={cat.categorie}>
-                <circle cx={center} cy={center} r={radius} fill="none" stroke="#1f2937" strokeWidth={8} />
-                <circle
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={8}
-                  strokeDasharray={circumference}
-                  strokeDashoffset={offset}
-                  strokeLinecap="round"
-                  transform={`rotate(-90 ${center} ${center})`}
-                />
-              </g>
-            )
-          })}
-        </svg>
-        <div className="flex flex-col gap-2.5">
-          {cats.map((cat) => (
-            <div key={cat.categorie} className="flex items-center gap-2">
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ background: percentColor(cat.percent) }}
-              />
-              <span className="text-xs text-gray-300">{cat.categorie}</span>
-              <span className="text-xs font-bold" style={{ color: percentColor(cat.percent) }}>
-                {cat.percent}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  const renderChartRingsCategories = () => (
+    <CategoryRingsChart cats={categoryBreakdown.slice(0, 4)} size={140} />
+  )
 
   const renderChartRingsGlobal = () => (
     <div className="flex items-center justify-center gap-6 py-2 flex-wrap">
@@ -1592,8 +1679,10 @@ export default function Habits() {
         percent={monthStats.rate}
         color={percentColor(monthStats.rate)}
       >
-        <span style={{ fontSize: 16, fontWeight: 700 }}>{monthStats.rate}%</span>
-        <span style={{ fontSize: 9, color: '#6b7280' }}>ce mois</span>
+        <span style={{ fontSize: 16, fontWeight: 700 }}>
+          <AnimatedNumber value={monthStats.rate} suffix="%" />
+        </span>
+        <span style={{ fontSize: 9, color: 'var(--text-faint)' }}>ce mois</span>
       </RingProgress>
       <div className="flex flex-wrap gap-3">
         {categoryBreakdown.map((cat) => (
@@ -1605,9 +1694,11 @@ export default function Habits() {
               percent={cat.percent}
               color={percentColor(cat.percent)}
             >
-              <span style={{ fontSize: 9, fontWeight: 700 }}>{cat.percent}%</span>
+              <span style={{ fontSize: 9, fontWeight: 700 }}>
+                <AnimatedNumber value={cat.percent} suffix="%" />
+              </span>
             </RingProgress>
-            <span className="text-center truncate w-full" style={{ fontSize: 9, color: '#6b7280' }}>
+            <span className="text-center truncate w-full" style={{ fontSize: 9, color: 'var(--text-faint)' }}>
               {cat.categorie}
             </span>
           </div>
@@ -1626,16 +1717,16 @@ export default function Habits() {
           : 'opacity-100'
 
     return (
-      <div className="border border-gray-800 rounded-lg p-4 mb-12">
+      <div className="border border-[var(--border)] rounded-lg p-4 mb-12">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-[var(--text-muted)]">
             {CHART_TYPE_TITLES[displayedChartType] || 'Progression sur 30 jours'}
           </p>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
               {CHART_TYPE_GROUPS[0].map(renderChartTypeButton)}
             </div>
-            <div className="w-[0.5px] h-5 bg-[#2a2a2a] shrink-0" />
+            <div className="w-[0.5px] h-5 bg-[var(--border)] shrink-0" />
             <div className="flex items-center gap-1">
               {CHART_TYPE_GROUPS[1].map(renderChartTypeButton)}
             </div>
@@ -1648,31 +1739,31 @@ export default function Habits() {
               <ResponsiveContainer width="100%" height="100%">
                 {displayedChartType === 'bar' ? (
                   <BarChart data={chartData}>
-                    <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
+                    <CartesianGrid stroke="var(--border-faint)" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="label" stroke="var(--text-faint)" fontSize={11} tickMargin={8} />
                     <YAxis
                       domain={[0, 100]}
-                      stroke="#6b7280"
+                      stroke="var(--text-faint)"
                       fontSize={11}
                       tickFormatter={(v) => `${v}%`}
                       width={40}
                     />
                     <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
-                    <Bar dataKey="taux" fill="#10b981" radius={[3, 3, 0, 0]} />
+                    <Bar dataKey="taux" fill="var(--accent)" radius={[3, 3, 0, 0]} />
                   </BarChart>
                 ) : (
                   <LineChart data={chartData}>
-                    <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
+                    <CartesianGrid stroke="var(--border-faint)" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="label" stroke="var(--text-faint)" fontSize={11} tickMargin={8} />
                     <YAxis
                       domain={[0, 100]}
-                      stroke="#6b7280"
+                      stroke="var(--text-faint)"
                       fontSize={11}
                       tickFormatter={(v) => `${v}%`}
                       width={40}
                     />
                     <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
-                    <Line type="monotone" dataKey="taux" stroke="#10b981" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="taux" stroke="var(--accent)" strokeWidth={2} dot={false} />
                   </LineChart>
                 )}
               </ResponsiveContainer>
@@ -1700,28 +1791,28 @@ export default function Habits() {
       <h2 className="text-xl font-bold mb-4">Statistiques avancées</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
-          <p className="text-sm text-gray-400 mb-2">🏆 Ton record</p>
-          <p className="text-2xl font-bold text-emerald-500">{bestStreak} jours</p>
+        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
+          <p className="text-sm text-[var(--text-faint)] mb-2">🏆 Ton record</p>
+          <p className="text-2xl font-bold text-[var(--accent)]">{bestStreak} jours</p>
         </div>
 
-        <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
-          <p className="text-sm text-gray-400 mb-3">Top habitudes du mois</p>
+        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
+          <p className="text-sm text-[var(--text-faint)] mb-3">Top habitudes du mois</p>
           <ul className="flex flex-col gap-1.5 text-sm">
             {topHabitudes.map((h) => (
               <li key={h.id} className="flex justify-between">
                 <span>
                   {h.emoji} {h.nom}
                 </span>
-                <span className="text-gray-500">{h.count}</span>
+                <span className="text-[var(--text-faint)]">{h.count}</span>
               </li>
             ))}
           </ul>
         </div>
       </div>
 
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 mb-4">
-        <p className="text-sm text-gray-400 mb-2">Habitude la plus négligée</p>
+      <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 mb-4">
+        <p className="text-sm text-[var(--text-faint)] mb-2">Habitude la plus négligée</p>
         {mostNeglected && (
           <p className="text-base">
             {mostNeglected.emoji} {mostNeglected.nom} — {mostNeglected.count} fois ce mois
@@ -1730,16 +1821,16 @@ export default function Habits() {
       </div>
 
       {workTimeThisMonth.byProjet.length > 0 && (
-        <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
-          <p className="text-sm text-gray-400 mb-1">Temps de travail ce mois</p>
+        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
+          <p className="text-sm text-[var(--text-faint)] mb-1">Temps de travail ce mois</p>
           <p className="text-2xl font-bold mb-4">
             {formatDurationMinutes(workTimeThisMonth.totalMinutes)}
           </p>
           <div className="flex flex-col gap-3">
             {workTimeThisMonth.byProjet.map(({ projet, minutes }) => (
               <div key={projet.id} className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 w-28 shrink-0 truncate">{projet.nom}</span>
-                <div className="flex-1 h-2 bg-[#1f2937] rounded-full overflow-hidden">
+                <span className="text-xs text-[var(--text-faint)] w-28 shrink-0 truncate">{projet.nom}</span>
+                <div className="flex-1 h-2 bg-[var(--cell-empty)] rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full"
                     style={{
@@ -1748,7 +1839,7 @@ export default function Habits() {
                     }}
                   />
                 </div>
-                <span className="text-xs text-gray-500 w-16 text-right shrink-0">
+                <span className="text-xs text-[var(--text-faint)] w-16 text-right shrink-0">
                   {formatDurationMinutes(minutes)}
                 </span>
               </div>
@@ -1760,19 +1851,19 @@ export default function Habits() {
   )
 
   const renderCategoryBreakdown = () => (
-    <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
-      <p className="text-sm text-gray-400 mb-3">Répartition par catégorie</p>
+    <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
+      <p className="text-sm text-[var(--text-faint)] mb-3">Répartition par catégorie</p>
       <div className="flex flex-col gap-3">
         {categoryBreakdown.map((row) => (
           <div key={row.categorie} className="flex items-center gap-3">
-            <span className="text-xs text-gray-400 w-28 shrink-0">{row.categorie}</span>
-            <div className="flex-1 h-2 bg-[#1f2937] rounded-full overflow-hidden">
+            <span className="text-xs text-[var(--text-faint)] w-28 shrink-0">{row.categorie}</span>
+            <div className="flex-1 h-2 bg-[var(--cell-empty)] rounded-full overflow-hidden">
               <div
-                className="h-full bg-emerald-500 rounded-full"
+                className="h-full bg-[var(--accent)] rounded-full"
                 style={{ width: `${row.percent}%` }}
               />
             </div>
-            <span className="text-xs text-gray-500 w-10 text-right">{row.percent}%</span>
+            <span className="text-xs text-[var(--text-faint)] w-10 text-right">{row.percent}%</span>
           </div>
         ))}
       </div>
@@ -1785,7 +1876,7 @@ export default function Habits() {
     const expectedPace = relevantDaysForMonth ? objectif * (relevantDaysForMonth / numDays) : 0
     const atteint = stats.count >= objectif
     const enBonneVoie = !atteint && stats.count >= expectedPace * 0.8
-    const color = stats.count === 0 ? '#374151' : atteint || enBonneVoie ? '#10b981' : '#6366f1'
+    const color = stats.count === 0 ? '#374151' : atteint || enBonneVoie ? 'var(--accent)' : '#6366f1'
     const percent = stats.percent ?? 0
     const data = [{ value: percent }, { value: 100 - percent }]
 
@@ -1803,12 +1894,12 @@ export default function Habits() {
             isAnimationActive={false}
           >
             <Cell fill={color} />
-            <Cell fill="#1f2937" />
+            <Cell fill="var(--cell-empty)" />
           </Pie>
         </PieChart>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-3xl font-bold">{stats.count}</span>
-          <span className="text-xs text-gray-500">/ {numDays}</span>
+          <span className="text-xs text-[var(--text-faint)]">/ {numDays}</span>
         </div>
       </div>
     )
@@ -1840,7 +1931,7 @@ export default function Habits() {
                 title={state === 'missed' ? 'Rattraper cette journée ?' : undefined}
                 shake={shakingCellKey === `${h.id}|${d.iso}`}
               />
-              <span className="text-[10px] text-gray-500">{label}</span>
+              <span className="text-[10px] text-[var(--text-faint)]">{label}</span>
             </div>
           )
         })}
@@ -1853,12 +1944,12 @@ export default function Habits() {
 
     return (
       <div
-        className="bg-[#141414] border border-[#2a2a2a] rounded-lg px-8 py-10 flex flex-col items-center"
+        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-8 py-10 flex flex-col items-center"
         style={{ minHeight: '60vh' }}
       >
         <span style={{ fontSize: 48, lineHeight: 1 }}>{h.emoji}</span>
         <p className="text-2xl font-bold mt-3">{h.nom}</p>
-        {h.categorie && <p className="text-xs text-gray-500 mt-1">{h.categorie}</p>}
+        {h.categorie && <p className="text-xs text-[var(--text-faint)] mt-1">{h.categorie}</p>}
 
         <div className="my-8">{renderZenRing(h)}</div>
 
@@ -1870,14 +1961,14 @@ export default function Habits() {
               <button
                 disabled
                 className="w-full rounded-lg font-bold text-base cursor-default transition-colors duration-300"
-                style={{ height: 52, background: '#059669', color: '#052e1f' }}
+                style={{ height: 52, background: 'var(--accent-hover)', color: 'var(--accent-contrast)' }}
               >
                 <span className="inline-block animate-[pop_300ms_ease-in-out]">✓</span> Fait
                 aujourd'hui
               </button>
               <button
                 onClick={() => toggleCompletion(h.id, todayISO, true)}
-                className="text-xs text-gray-500 hover:text-gray-300 mt-2 underline"
+                className="text-xs text-[var(--text-faint)] hover:text-[var(--text-muted)] mt-2 underline"
               >
                 Annuler
               </button>
@@ -1885,7 +1976,7 @@ export default function Habits() {
           ) : (
             <button
               onClick={() => toggleCompletion(h.id, todayISO, false)}
-              className="momentum-pulse-subtle active:scale-[0.97] transition-[background-color,transform] duration-[80ms] w-full rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black font-bold text-base"
+              className="momentum-pulse-subtle active:scale-[0.97] transition-[background-color,transform] duration-[80ms] w-full rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-black font-bold text-base"
               style={{ height: 52 }}
             >
               ✓ Marquer comme faite aujourd'hui
@@ -1979,7 +2070,7 @@ export default function Habits() {
       <div className="text-center mb-6">
         <button
           onClick={() => setCompactStatsExpanded((v) => !v)}
-          className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
         >
           {compactStatsExpanded ? 'Masquer les stats ▲' : 'Voir les stats ▼'}
         </button>
@@ -2028,7 +2119,7 @@ export default function Habits() {
           <button
             onClick={goToPrevHabit}
             disabled={idx === 0}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
           >
             ←
           </button>
@@ -2037,7 +2128,7 @@ export default function Habits() {
               <span
                 key={h.id}
                 className={`h-1.5 transition-[width,background-color] duration-200 ${
-                  i === idx ? 'w-4 rounded-[3px] bg-emerald-500' : 'w-1.5 rounded-full bg-gray-700'
+                  i === idx ? 'w-4 rounded-[3px] bg-[var(--accent)]' : 'w-1.5 rounded-full bg-[var(--surface-3)]'
                 }`}
               />
             ))}
@@ -2045,7 +2136,7 @@ export default function Habits() {
           <button
             onClick={goToNextHabit}
             disabled={idx === habitudes.length - 1}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
           >
             →
           </button>
@@ -2054,7 +2145,7 @@ export default function Habits() {
         <div className="text-center">
           <button
             onClick={() => handleLayoutChange('focus')}
-            className="text-xs text-gray-500 hover:text-gray-300 underline transition-colors"
+            className="text-xs text-[var(--text-faint)] hover:text-[var(--text-muted)] underline transition-colors"
           >
             Voir toutes mes habitudes ce mois →
           </button>
@@ -2081,10 +2172,10 @@ export default function Habits() {
                   title={locked ? `${opt.label} — Pro` : opt.label}
                   className={`relative w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors ${
                     locked
-                      ? 'bg-[#1a1a1a] border-gray-800 text-gray-700 cursor-not-allowed'
+                      ? 'bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-subtle)] cursor-not-allowed'
                       : effectiveLayout === opt.id
-                        ? 'bg-emerald-500 border-emerald-500 text-black'
-                        : 'bg-[#1a1a1a] border-gray-700 text-white'
+                        ? 'bg-[var(--accent)] border-[var(--accent)] text-black'
+                        : 'bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-strong)]'
                   }`}
                 >
                   {opt.icon}
@@ -2095,19 +2186,19 @@ export default function Habits() {
           </div>
           <button
             onClick={() => setShowCustomizePanel(true)}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
           >
             ⚙ Personnaliser
           </button>
           <button
             onClick={handleExport}
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
           >
             Exporter mes données 📥
           </button>
           <Link
             to="/habits/manage"
-            className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
           >
             Gérer mes habitudes ✏️
           </Link>
@@ -2116,14 +2207,14 @@ export default function Habits() {
 
       {showExportModal && (
         <Modal onClose={() => setShowExportModal(false)}>
-          <p className="text-sm text-gray-200 mb-6">
+          <p className="text-sm text-[var(--text-muted)] mb-6">
             Fonctionnalité réservée au plan Discipline+ 🔒 — Débloque l'export et
             les stats avancées.
           </p>
           <div className="flex justify-end">
             <button
               onClick={() => setShowExportModal(false)}
-              className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-4 py-2 text-sm"
+              className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-black font-bold rounded-md px-4 py-2 text-sm"
             >
               Fermer
             </button>
@@ -2134,18 +2225,18 @@ export default function Habits() {
       {showCustomizePanel && (
         <>
           <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setShowCustomizePanel(false)} />
-          <div className="fixed top-0 right-0 h-full w-[280px] bg-[#0f0f0f] border-l border-[#2a2a2a] z-50 p-5 overflow-y-auto momentum-panel-slide">
+          <div className="fixed top-0 right-0 h-full w-[280px] bg-[var(--surface-1)] border-l border-[var(--border)] z-50 p-5 overflow-y-auto momentum-panel-slide">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-bold text-base">Personnaliser mon dashboard</h2>
               <button
                 onClick={() => setShowCustomizePanel(false)}
-                className="text-gray-400 hover:text-white text-xl leading-none"
+                className="text-[var(--text-faint)] hover:text-[var(--text-strong)] text-xl leading-none"
               >
                 ×
               </button>
             </div>
 
-            <p className="text-[12px] text-gray-500 italic mb-5">
+            <p className="text-[12px] text-[var(--text-faint)] italic mb-5">
               Survole une section pour la déplacer ⠿
             </p>
 
@@ -2156,9 +2247,9 @@ export default function Habits() {
                 return (
                   <div key={w.id} className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-300">{w.label}</span>
+                      <span className="text-sm text-[var(--text-muted)]">{w.label}</span>
                       {w.proOnly && (
-                        <span className="text-[9px] border border-gray-700 text-gray-400 rounded-full px-1.5 py-0.5">
+                        <span className="text-[9px] border border-[var(--border)] text-[var(--text-faint)] rounded-full px-1.5 py-0.5">
                           Pro
                         </span>
                       )}
@@ -2169,10 +2260,10 @@ export default function Habits() {
                       onClick={() => toggleWidget(w.id)}
                       className={`w-9 h-5 rounded-full relative transition-colors shrink-0 ${
                         locked
-                          ? 'bg-gray-800 cursor-not-allowed opacity-50'
+                          ? 'bg-[var(--surface-3)] cursor-not-allowed opacity-50'
                           : checked
-                            ? 'bg-emerald-500'
-                            : 'bg-gray-700'
+                            ? 'bg-[var(--accent)]'
+                            : 'bg-[var(--surface-3)]'
                       }`}
                     >
                       <span
@@ -2188,7 +2279,7 @@ export default function Habits() {
 
             <button
               onClick={resetWidgets}
-              className="mt-8 w-full border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+              className="mt-8 w-full border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Tout réafficher
             </button>

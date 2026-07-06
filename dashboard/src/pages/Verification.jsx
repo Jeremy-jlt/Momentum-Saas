@@ -115,7 +115,7 @@ export default function Verification() {
 
   if (loading) {
     return (
-      <div className="max-w-lg mx-auto px-6 py-24 text-center text-gray-400">
+      <div className="max-w-lg mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
         Chargement...
       </div>
     )
@@ -124,10 +124,10 @@ export default function Verification() {
   if (error) {
     return (
       <div className="max-w-lg mx-auto px-6 py-24 text-center">
-        <p className="text-red-400 mb-6">{error}</p>
+        <p className="text-[var(--danger)] mb-6">{error}</p>
         <button
           onClick={() => navigate('/engagements')}
-          className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-6 py-3 text-sm"
+          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-6 py-3 text-sm"
         >
           Retour
         </button>
@@ -140,9 +140,9 @@ export default function Verification() {
   if (statut === 'reussi') {
     return (
       <div className="max-w-lg mx-auto px-6 py-24 text-center">
-        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500 flex items-center justify-center mx-auto mb-6">
+        <div className="w-16 h-16 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)] flex items-center justify-center mx-auto mb-6">
           <svg
-            className="w-8 h-8 text-emerald-500"
+            className="w-8 h-8 text-[var(--accent)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -152,13 +152,13 @@ export default function Verification() {
           </svg>
         </div>
         <h1 className="text-2xl font-bold mb-2">Engagement tenu</h1>
-        <p className="text-gray-400 mb-2">Tu récupères ta mise de {mise} €.</p>
+        <p className="text-[var(--text-faint)] mb-2">Tu récupères ta mise de {mise} €.</p>
         {resultat?.raison && (
-          <p className="text-xs text-gray-500 mb-8 max-w-sm mx-auto">{resultat.raison}</p>
+          <p className="text-xs text-[var(--text-faint)] mb-8 max-w-sm mx-auto">{resultat.raison}</p>
         )}
         <button
           onClick={() => navigate('/engagements')}
-          className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm"
         >
           Retour
         </button>
@@ -170,15 +170,15 @@ export default function Verification() {
     return (
       <div className="max-w-lg mx-auto px-6 py-24 text-center">
         <h1 className="text-2xl font-bold mb-2">Engagement non vérifié</h1>
-        <p className="text-gray-400 mb-2">
+        <p className="text-[var(--text-faint)] mb-2">
           Ta mise de {mise} € est perdue. Le temps, lui, ne reviendra pas.
         </p>
         {resultat?.raison && (
-          <p className="text-xs text-gray-500 mb-8 max-w-sm mx-auto">{resultat.raison}</p>
+          <p className="text-xs text-[var(--text-faint)] mb-8 max-w-sm mx-auto">{resultat.raison}</p>
         )}
         <button
           onClick={() => navigate('/engagements')}
-          className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-6 py-3 text-sm"
+          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-6 py-3 text-sm"
         >
           Retour
         </button>
@@ -192,24 +192,24 @@ export default function Verification() {
   return (
     <div className="max-w-lg mx-auto px-6 py-16 text-center">
       <h1 className="text-2xl font-bold mb-1">Engagement terminé</h1>
-      <p className="text-gray-400 mb-10">{engagement?.nom}</p>
+      <p className="text-[var(--text-faint)] mb-10">{engagement?.nom}</p>
 
       <div className="bg-white p-4 rounded-lg inline-block mb-8">
         <QRCodeSVG value={mobileUrl} size={220} />
       </div>
 
       <div className="flex flex-col gap-2 mb-8 text-sm">
-        <p className="text-gray-200 font-bold">Scanne ce QR code avec ton téléphone</p>
-        <p className="text-gray-400">
+        <p className="text-[var(--text-muted)] font-bold">Scanne ce QR code avec ton téléphone</p>
+        <p className="text-[var(--text-faint)]">
           Uploade ta capture d'écran "Temps d'écran" (iOS) ou "Bien-être numérique"
           (Android)
         </p>
       </div>
 
-      <div className="inline-flex items-center gap-2 border border-gray-800 rounded-full px-4 py-2 text-xs text-gray-400">
+      <div className="inline-flex items-center gap-2 border border-[var(--border)] rounded-full px-4 py-2 text-xs text-[var(--text-faint)]">
         <span
           className={`w-2 h-2 rounded-full ${
-            statut === 'en_attente' ? 'bg-emerald-500 animate-pulse' : 'bg-gray-500'
+            statut === 'en_attente' ? 'bg-[var(--accent)] animate-pulse' : 'bg-[var(--text-subtle)]'
           }`}
         />
         {statut === 'en_attente'

@@ -28,10 +28,10 @@ function EmojiPicker({ onSelect, onClose }) {
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} />
-      <div className="absolute z-50 mt-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 w-72 shadow-lg">
+      <div className="absolute z-50 mt-1 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg p-3 w-72 shadow-lg">
         {EMOJI_PICKER_GROUPS.map((group) => (
           <div key={group.title} className="mb-2 last:mb-0">
-            <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">
+            <p className="text-[10px] uppercase tracking-wide text-[var(--text-faint)] mb-1">
               {group.title}
             </p>
             <div className="flex flex-wrap gap-1">
@@ -40,7 +40,7 @@ function EmojiPicker({ onSelect, onClose }) {
                   key={e}
                   type="button"
                   onClick={() => onSelect(e)}
-                  className="text-lg hover:bg-[#2a2a2a] rounded p-1 transition-colors"
+                  className="text-lg hover:bg-[var(--surface-3)] rounded p-1 transition-colors"
                 >
                   {e}
                 </button>
@@ -86,8 +86,8 @@ function SortableHabitRow({ id, children }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center flex-wrap gap-3 rounded-md px-3 py-2 hover:bg-[#1a1a1a] transition-colors ${
-        isDragging ? 'relative z-10 opacity-70 shadow-[0_8px_24px_rgba(0,0,0,0.4)] bg-[#1a1a1a]' : ''
+      className={`flex items-center flex-wrap gap-3 rounded-md px-3 py-2 hover:bg-[var(--surface-1)] transition-colors ${
+        isDragging ? 'relative z-10 opacity-70 shadow-[0_8px_24px_rgba(0,0,0,0.4)] bg-[var(--surface-1)]' : ''
       } ${justDropped ? 'animate-[drop-bounce_150ms_ease-out]' : ''}`}
     >
       <button
@@ -95,7 +95,7 @@ function SortableHabitRow({ id, children }) {
         {...attributes}
         {...listeners}
         style={{ touchAction: 'none' }}
-        className="text-[#4b5563] hover:text-gray-400 cursor-grab active:cursor-grabbing shrink-0 text-lg leading-none px-1"
+        className="text-[var(--text-subtle)] hover:text-[var(--text-faint)] cursor-grab active:cursor-grabbing shrink-0 text-lg leading-none px-1"
         aria-label="Réorganiser cette habitude"
       >
         ⠿
@@ -298,7 +298,7 @@ export default function HabitManager() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-24 text-center text-gray-400">
+      <div className="max-w-3xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
         Chargement...
       </div>
     )
@@ -312,26 +312,26 @@ export default function HabitManager() {
         <h1 className="text-3xl font-bold">Gérer mes habitudes</h1>
         <button
           onClick={() => setShowTemplateModal(true)}
-          className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
         >
           Changer de template
         </button>
       </div>
 
-      <div className="border-l-2 border-emerald-500 pl-5 py-2 mb-8 bg-[#141414] text-gray-300 text-sm rounded-r">
+      <div className="border-l-2 border-[var(--accent)] pl-5 py-2 mb-8 bg-[var(--surface-2)] text-[var(--text-muted)] text-sm rounded-r">
         Tes habitudes sont entièrement personnalisables. Renomme-les, change leur
         emoji, réorganise-les (glisse la poignée ⠿) ou ajoute-en de nouvelles.
       </div>
 
       {!isPro && (
-        <p className="text-xs text-gray-500 mb-6">
+        <p className="text-xs text-[var(--text-faint)] mb-6">
           {activeCount}/{FREE_HABIT_LIMIT} habitudes actives (plan gratuit)
         </p>
       )}
 
       {showTemplateModal && (
         <Modal onClose={() => setShowTemplateModal(false)}>
-          <p className="text-sm text-gray-200 mb-6">
+          <p className="text-sm text-[var(--text-muted)] mb-6">
             Changer de template va ajouter les nouvelles habitudes à ta liste
             existante. Tes habitudes actuelles et toutes tes coches seront
             conservées. Tu pourras ensuite supprimer ce que tu ne veux pas garder.
@@ -339,13 +339,13 @@ export default function HabitManager() {
           <div className="flex items-center gap-3 justify-end">
             <button
               onClick={() => setShowTemplateModal(false)}
-              className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Annuler
             </button>
             <button
               onClick={() => navigate('/habits/templates?mode=add')}
-              className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-4 py-2 text-sm"
+              className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm"
             >
               Continuer
             </button>
@@ -356,20 +356,20 @@ export default function HabitManager() {
       {showDeleteAllModal && (
         <Modal onClose={() => setShowDeleteAllModal(false)}>
           <h3 className="font-bold text-lg mb-2">Supprimer toutes les habitudes ?</h3>
-          <p className="text-sm text-gray-300 mb-6">
+          <p className="text-sm text-[var(--text-muted)] mb-6">
             Cette action supprimera définitivement toutes tes habitudes ET toutes
             tes coches. Cette action est irréversible.
           </p>
           <div className="flex items-center gap-3 justify-end">
             <button
               onClick={() => setShowDeleteAllModal(false)}
-              className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 py-2 text-sm"
+              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Annuler
             </button>
             <button
               onClick={handleDeleteAll}
-              className="bg-red-500 hover:bg-red-600 transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
+              className="bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
             >
               Tout supprimer
             </button>
@@ -377,7 +377,7 @@ export default function HabitManager() {
         </Modal>
       )}
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-sm mb-4">{error}</p>}
 
       <DndContext
         sensors={sensors}
@@ -393,7 +393,7 @@ export default function HabitManager() {
                   <button
                     type="button"
                     onClick={() => setOpenPickerId(openPickerId === h.id ? null : h.id)}
-                    className="text-2xl hover:bg-[#2a2a2a] rounded p-1"
+                    className="text-2xl hover:bg-[var(--surface-3)] rounded p-1"
                   >
                     {h.emoji || '🎯'}
                   </button>
@@ -420,14 +420,14 @@ export default function HabitManager() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') e.currentTarget.blur()
                       }}
-                      className="w-full bg-[#1a1a1a] border border-gray-700 rounded px-2 py-1 text-sm focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-[var(--surface-1)] border border-[var(--border)] rounded px-2 py-1 text-sm focus:outline-none focus:border-[var(--accent)]"
                     />
                   ) : (
                     <button
                       onClick={() => setEditingNameId(h.id)}
-                      className="text-sm text-gray-200 hover:bg-[#1a1a1a] rounded px-1 py-0.5 text-left"
+                      className="text-sm text-[var(--text-muted)] hover:bg-[var(--surface-1)] rounded px-1 py-0.5 text-left"
                     >
-                      {h.nom} <span className="text-gray-600">✏️</span>
+                      {h.nom} <span className="text-[var(--text-subtle)]">✏️</span>
                     </button>
                   )}
                 </div>
@@ -435,11 +435,11 @@ export default function HabitManager() {
                 <select
                   value={h.categorie || ''}
                   onChange={(e) => updateHabitude(h.id, { categorie: e.target.value })}
-                  className="bg-transparent border border-gray-700 rounded text-xs px-2 py-1.5 text-gray-300 shrink-0"
+                  className="bg-transparent border border-[var(--border)] rounded text-xs px-2 py-1.5 text-[var(--text-muted)] shrink-0"
                 >
                   <option value="">—</option>
                   {HABIT_CATEGORIES.map((c) => (
-                    <option key={c} value={c} className="bg-[#0a0a0a]">
+                    <option key={c} value={c} className="bg-[var(--surface-0)]">
                       {c}
                     </option>
                   ))}
@@ -456,9 +456,9 @@ export default function HabitManager() {
                         onChange={(e) =>
                           updateHabitude(h.id, { objectif_jours: Number(e.target.value) })
                         }
-                        className="w-14 bg-transparent border border-gray-700 rounded text-xs px-2 py-1.5 text-gray-300"
+                        className="w-14 bg-transparent border border-[var(--border)] rounded text-xs px-2 py-1.5 text-[var(--text-muted)]"
                       />
-                      <span className="text-[10px] text-gray-500">j/mois</span>
+                      <span className="text-[10px] text-[var(--text-faint)]">j/mois</span>
                     </>
                   ) : (
                     <>
@@ -466,15 +466,15 @@ export default function HabitManager() {
                         type="number"
                         disabled
                         value={h.objectif_jours ?? DEFAULT_OBJECTIF_JOURS}
-                        className="w-14 bg-transparent border border-gray-800 rounded text-xs px-2 py-1.5 text-gray-600 cursor-not-allowed"
+                        className="w-14 bg-transparent border border-[var(--border)] rounded text-xs px-2 py-1.5 text-[var(--text-subtle)] cursor-not-allowed"
                       />
-                      <span className="text-[10px] text-gray-600">🔒 Plan Discipline+</span>
+                      <span className="text-[10px] text-[var(--text-subtle)]">🔒 Plan Discipline+</span>
                     </>
                   )}
                 </div>
 
                 <label className="flex items-center gap-2 shrink-0 cursor-pointer">
-                  <span className="text-[11px] text-gray-500">{h.actif ? 'Actif' : 'Inactif'}</span>
+                  <span className="text-[11px] text-[var(--text-faint)]">{h.actif ? 'Actif' : 'Inactif'}</span>
                   <input
                     type="checkbox"
                     checked={h.actif}
@@ -485,7 +485,7 @@ export default function HabitManager() {
 
                 <button
                   onClick={() => handleDelete(h.id)}
-                  className="text-xs border border-gray-700 text-gray-400 hover:border-red-500 hover:text-red-400 transition-colors rounded-md px-2 py-1.5 shrink-0"
+                  className="text-xs border border-[var(--border)] text-[var(--text-faint)] hover:border-[var(--danger)] hover:text-[var(--danger)] transition-colors rounded-md px-2 py-1.5 shrink-0"
                 >
                   Supprimer
                 </button>
@@ -493,7 +493,7 @@ export default function HabitManager() {
             ))}
 
             {habitudes.length === 0 && (
-              <p className="text-gray-500 text-sm px-3 py-6 text-center">
+              <p className="text-[var(--text-faint)] text-sm px-3 py-6 text-center">
                 Aucune habitude pour l'instant — ajoute-en une ci-dessous.
               </p>
             )}
@@ -501,14 +501,14 @@ export default function HabitManager() {
         </SortableContext>
       </DndContext>
 
-      <div className="border border-gray-800 rounded-lg p-4 mb-6">
-        <p className="text-xs text-gray-500 mb-3">Ajouter une habitude</p>
+      <div className="border border-[var(--border)] rounded-lg p-4 mb-6">
+        <p className="text-xs text-[var(--text-faint)] mb-3">Ajouter une habitude</p>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => setNewPickerOpen((v) => !v)}
-              className="text-2xl hover:bg-[#2a2a2a] rounded p-1"
+              className="text-2xl hover:bg-[var(--surface-3)] rounded p-1"
             >
               {newEmoji}
             </button>
@@ -528,16 +528,16 @@ export default function HabitManager() {
             value={newNom}
             onChange={(e) => setNewNom(e.target.value)}
             placeholder="Nom de l'habitude"
-            className="flex-1 min-w-[160px] bg-transparent border border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            className="flex-1 min-w-[160px] bg-transparent border border-[var(--border)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
           />
 
           <select
             value={newCategorie}
             onChange={(e) => setNewCategorie(e.target.value)}
-            className="bg-transparent border border-gray-700 rounded-md text-sm px-3 py-2 text-gray-300"
+            className="bg-transparent border border-[var(--border)] rounded-md text-sm px-3 py-2 text-[var(--text-muted)]"
           >
             {HABIT_CATEGORIES.map((c) => (
-              <option key={c} value={c} className="bg-[#0a0a0a]">
+              <option key={c} value={c} className="bg-[var(--surface-0)]">
                 {c}
               </option>
             ))}
@@ -546,7 +546,7 @@ export default function HabitManager() {
           <button
             onClick={handleAdd}
             disabled={adding}
-            className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-4 py-2 text-sm disabled:opacity-50"
+            className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm disabled:opacity-50"
           >
             {adding ? 'Ajout...' : '+ Ajouter'}
           </button>
@@ -557,7 +557,7 @@ export default function HabitManager() {
         <div className="text-center mb-10">
           <button
             onClick={() => setShowDeleteAllModal(true)}
-            className="border border-red-500/40 text-red-400 hover:border-red-500/70 transition-colors rounded-md px-4 py-2 text-sm bg-transparent"
+            className="border border-[var(--danger)]/40 text-[var(--danger)] hover:border-[var(--danger)]/70 transition-colors rounded-md px-4 py-2 text-sm bg-transparent"
           >
             Tout supprimer 🗑
           </button>
@@ -567,7 +567,7 @@ export default function HabitManager() {
       <div className="text-center">
         <button
           onClick={() => navigate('/habits')}
-          className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm"
         >
           Terminer et voir ma grille →
         </button>

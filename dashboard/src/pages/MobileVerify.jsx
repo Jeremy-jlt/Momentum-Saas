@@ -94,34 +94,34 @@ export default function MobileVerify() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-6">
-        <p className="text-gray-400 text-lg">Chargement...</p>
+      <div className="min-h-screen bg-[var(--surface-0)] text-[var(--text-strong)] flex items-center justify-center px-6">
+        <p className="text-[var(--text-faint)] text-lg">Chargement...</p>
       </div>
     )
   }
 
   if (error && !engagement) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-6 text-center">
-        <p className="text-red-400 text-lg">{error}</p>
+      <div className="min-h-screen bg-[var(--surface-0)] text-[var(--text-strong)] flex items-center justify-center px-6 text-center">
+        <p className="text-[var(--danger)] text-lg">{error}</p>
       </div>
     )
   }
 
   if (status === 'sending') {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center px-6 text-center">
-        <p className="text-gray-300 text-xl font-bold">Vérification en cours...</p>
+      <div className="min-h-screen bg-[var(--surface-0)] text-[var(--text-strong)] flex items-center justify-center px-6 text-center">
+        <p className="text-[var(--text-muted)] text-xl font-bold">Vérification en cours...</p>
       </div>
     )
   }
 
   if (status === 'success') {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center px-6 text-center gap-4">
-        <div className="w-20 h-20 rounded-full bg-emerald-500/10 border border-emerald-500 flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--surface-0)] text-[var(--text-strong)] flex flex-col items-center justify-center px-6 text-center gap-4">
+        <div className="w-20 h-20 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)] flex items-center justify-center">
           <svg
-            className="w-10 h-10 text-emerald-500"
+            className="w-10 h-10 text-[var(--accent)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -132,9 +132,9 @@ export default function MobileVerify() {
         </div>
         <h1 className="text-2xl font-bold">Engagement tenu</h1>
         {resultat?.raison && (
-          <p className="text-gray-400 text-base max-w-xs">{resultat.raison}</p>
+          <p className="text-[var(--text-faint)] text-base max-w-xs">{resultat.raison}</p>
         )}
-        <p className="text-gray-500 text-sm mt-4">
+        <p className="text-[var(--text-faint)] text-sm mt-4">
           Le résultat s'affiche aussi sur ton ordinateur.
         </p>
       </div>
@@ -143,12 +143,12 @@ export default function MobileVerify() {
 
   if (status === 'failure') {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center px-6 text-center gap-4">
+      <div className="min-h-screen bg-[var(--surface-0)] text-[var(--text-strong)] flex flex-col items-center justify-center px-6 text-center gap-4">
         <h1 className="text-2xl font-bold">Engagement non vérifié</h1>
         {resultat?.raison && (
-          <p className="text-gray-400 text-base max-w-xs">{resultat.raison}</p>
+          <p className="text-[var(--text-faint)] text-base max-w-xs">{resultat.raison}</p>
         )}
-        <p className="text-gray-500 text-sm mt-4">
+        <p className="text-[var(--text-faint)] text-sm mt-4">
           Le résultat s'affiche aussi sur ton ordinateur.
         </p>
       </div>
@@ -156,15 +156,15 @@ export default function MobileVerify() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col px-6 py-10">
+    <div className="min-h-screen bg-[var(--surface-0)] text-[var(--text-strong)] flex flex-col px-6 py-10">
       <div className="flex items-center gap-2 mb-8">
-        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+        <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
         <span className="font-bold tracking-widest text-sm">MOMENTUM</span>
       </div>
 
       <h1 className="text-2xl font-bold mb-1">{engagement?.nom}</h1>
       {Array.isArray(engagement?.sites_bloques) && (
-        <p className="text-gray-400 text-base mb-8">
+        <p className="text-[var(--text-faint)] text-base mb-8">
           Sites concernés : {engagement.sites_bloques.join(', ')}
         </p>
       )}
@@ -181,26 +181,26 @@ export default function MobileVerify() {
         <img
           src={previewUrl}
           alt="Aperçu de la capture"
-          className="w-full rounded-lg border border-gray-800 mb-4 max-h-80 object-contain"
+          className="w-full rounded-lg border border-[var(--border)] mb-4 max-h-80 object-contain"
         />
       ) : (
-        <div className="w-full border-2 border-dashed border-gray-700 rounded-lg py-16 flex items-center justify-center mb-4 text-gray-500 text-base text-center px-4">
+        <div className="w-full border-2 border-dashed border-[var(--border)] rounded-lg py-16 flex items-center justify-center mb-4 text-[var(--text-faint)] text-base text-center px-4">
           Aucune capture sélectionnée
         </div>
       )}
 
       <button
         onClick={() => inputRef.current?.click()}
-        className="w-full border border-gray-700 text-gray-200 rounded-lg py-4 text-lg font-bold mb-4 active:border-gray-500"
+        className="w-full border border-[var(--border)] text-[var(--text-muted)] rounded-lg py-4 text-lg font-bold mb-4 active:border-[var(--border-strong)]"
       >
         Choisir une photo
       </button>
 
-      {error && <p className="text-red-400 text-base mb-4">{error}</p>}
+      {error && <p className="text-[var(--danger)] text-base mb-4">{error}</p>}
 
       <button
         onClick={handleSubmit}
-        className="w-full bg-emerald-500 active:bg-emerald-600 text-black font-bold rounded-lg py-4 text-lg"
+        className="w-full bg-[var(--accent)] active:bg-[var(--accent-hover)] text-[var(--accent-contrast)] font-bold rounded-lg py-4 text-lg"
       >
         Envoyer pour vérification
       </button>

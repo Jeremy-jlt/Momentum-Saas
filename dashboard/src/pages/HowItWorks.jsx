@@ -27,26 +27,26 @@ export default function HowItWorks() {
       <div className="flex flex-col gap-8 mb-12">
         {STEPS.map((step, i) => (
           <div key={step.title} className="flex gap-5">
-            <div className="shrink-0 w-9 h-9 rounded-full border border-gray-700 flex items-center justify-center text-sm font-bold text-gray-300">
+            <div className="shrink-0 w-9 h-9 rounded-full border border-[var(--border)] flex items-center justify-center text-sm font-bold text-[var(--text-muted)]">
               {i + 1}
             </div>
             <div>
               <h2 className="font-bold mb-1">{step.title}</h2>
-              <p className="text-gray-400 text-sm">{step.text}</p>
+              <p className="text-[var(--text-faint)] text-sm">{step.text}</p>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="border-l-2 border-emerald-500 pl-5 py-2 mb-12">
-        <p className="text-gray-200">
+      <div className="border-l-2 border-[var(--accent)] pl-5 py-2 mb-12">
+        <p className="text-[var(--text-muted)]">
           Tu peux tromper Momentum. Tu ne peux pas tromper le temps perdu.
         </p>
       </div>
 
       <Link
         to="/new"
-        className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm inline-block"
+        className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm inline-block"
       >
         Créer mon premier engagement
       </Link>

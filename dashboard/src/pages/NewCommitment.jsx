@@ -74,9 +74,9 @@ export default function NewCommitment() {
   if (created) {
     return (
       <div className="max-w-xl mx-auto px-6 py-24 text-center">
-        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500 flex items-center justify-center mx-auto mb-6">
+        <div className="w-16 h-16 rounded-full bg-[var(--accent)]/10 border border-[var(--accent)] flex items-center justify-center mx-auto mb-6">
           <svg
-            className="w-8 h-8 text-emerald-500"
+            className="w-8 h-8 text-[var(--accent)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -86,22 +86,22 @@ export default function NewCommitment() {
           </svg>
         </div>
         <h1 className="text-2xl font-bold mb-2">Engagement créé</h1>
-        <p className="text-gray-400 mb-8">« {created.nom} » est maintenant en cours.</p>
+        <p className="text-[var(--text-faint)] mb-8">« {created.nom} » est maintenant en cours.</p>
 
-        <div className="text-left border border-gray-800 rounded-lg p-6 mb-8 text-sm space-y-2">
+        <div className="text-left border border-[var(--border)] rounded-lg p-6 mb-8 text-sm space-y-2">
           <p>
-            <span className="text-gray-500">Sites bloqués : </span>
+            <span className="text-[var(--text-faint)]">Sites bloqués : </span>
             {created.sites_bloques.join(', ')}
           </p>
           <p>
-            <span className="text-gray-500">Horaires : </span>
+            <span className="text-[var(--text-faint)]">Horaires : </span>
             {created.heure_debut} — {created.heure_fin}
           </p>
         </div>
 
         <button
           onClick={() => navigate('/engagements')}
-          className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
+          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm"
         >
           Voir mes engagements
         </button>
@@ -115,22 +115,22 @@ export default function NewCommitment() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-10">
         <div>
-          <label className="block text-sm text-gray-300 mb-2">Nom de l'engagement</label>
+          <label className="block text-sm text-[var(--text-muted)] mb-2">Nom de l'engagement</label>
           <input
             type="text"
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             placeholder="Ex : Semaine de deep work"
-            className="w-full bg-transparent border border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+            className="w-full bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
           />
         </div>
 
         <div>
-          <label className="block text-sm text-gray-300 mb-4">Sites à bloquer</label>
+          <label className="block text-sm text-[var(--text-muted)] mb-4">Sites à bloquer</label>
           <div className="flex flex-col gap-5">
             {SITE_CATEGORIES.map((cat) => (
               <div key={cat.title}>
-                <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+                <p className="text-xs uppercase tracking-wide text-[var(--text-faint)] mb-2">
                   {cat.title}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -143,8 +143,8 @@ export default function NewCommitment() {
                         onClick={() => toggleSite(site)}
                         className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
                           active
-                            ? 'bg-emerald-500 border-emerald-500 text-black font-bold'
-                            : 'bg-transparent border-gray-700 text-gray-300 hover:border-gray-500'
+                            ? 'bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] font-bold'
+                            : 'bg-transparent border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)]'
                         }`}
                       >
                         {site}
@@ -156,7 +156,7 @@ export default function NewCommitment() {
             ))}
 
             <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+              <p className="text-xs uppercase tracking-wide text-[var(--text-faint)] mb-2">
                 Site personnalisé
               </p>
               <div className="flex flex-wrap gap-2 mb-2">
@@ -167,7 +167,7 @@ export default function NewCommitment() {
                       type="button"
                       key={site}
                       onClick={() => toggleSite(site)}
-                      className="text-xs rounded-full px-3 py-1.5 border bg-emerald-500 border-emerald-500 text-black font-bold"
+                      className="text-xs rounded-full px-3 py-1.5 border bg-[var(--accent)] border-[var(--accent)] text-[var(--accent-contrast)] font-bold"
                     >
                       {site}
                     </button>
@@ -185,12 +185,12 @@ export default function NewCommitment() {
                     }
                   }}
                   placeholder="ex: monsite.com"
-                  className="flex-1 bg-transparent border border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+                  className="flex-1 bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
                 />
                 <button
                   type="button"
                   onClick={addCustomSite}
-                  className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-4 text-sm"
+                  className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 text-sm"
                 >
                   +
                 </button>
@@ -201,45 +201,45 @@ export default function NewCommitment() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Heure de début</label>
+            <label className="block text-sm text-[var(--text-muted)] mb-2">Heure de début</label>
             <input
               type="time"
               value={heureDebut}
               onChange={(e) => setHeureDebut(e.target.value)}
-              className="w-full bg-transparent border border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              className="w-full bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-2">Heure de fin</label>
+            <label className="block text-sm text-[var(--text-muted)] mb-2">Heure de fin</label>
             <input
               type="time"
               value={heureFin}
               onChange={(e) => setHeureFin(e.target.value)}
-              className="w-full bg-transparent border border-gray-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-emerald-500"
+              className="w-full bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
             />
           </div>
         </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-[var(--danger)] text-sm">{error}</p>}
 
         <div>
           <div className="flex items-center gap-4">
             <button
               type="submit"
               disabled={submitting}
-              className="bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-6 py-3 text-sm disabled:opacity-50"
+              className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm disabled:opacity-50"
             >
               {submitting ? 'Validation...' : "Valider l'engagement"}
             </button>
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="border border-gray-700 text-gray-300 hover:border-gray-500 transition-colors rounded-md px-6 py-3 text-sm"
+              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-6 py-3 text-sm"
             >
               Annuler
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-3">
+          <p className="text-xs text-[var(--text-faint)] mt-3">
             La durée et la mise seront configurables dans une prochaine version.
           </p>
         </div>

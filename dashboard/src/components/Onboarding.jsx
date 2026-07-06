@@ -111,14 +111,14 @@ export default function Onboarding() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="fixed inset-0 bg-black/70" />
-      <div className="relative bg-[#141414] border border-[#2a2a2a] rounded-lg p-8 max-w-md w-full text-center">
+      <div className="relative bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-8 max-w-md w-full text-center">
         <h2 className="text-2xl font-bold mb-3">{step.title}</h2>
-        <p className="text-gray-400 text-sm mb-6">{step.text}</p>
+        <p className="text-[var(--text-faint)] text-sm mb-6">{step.text}</p>
 
         {step.extraLink && (
           <a
             href={step.extraLink.href}
-            className="inline-block text-xs border border-gray-700 text-gray-400 rounded-full px-3 py-1.5 mb-6 hover:border-gray-500 transition-colors"
+            className="inline-block text-xs border border-[var(--border)] text-[var(--text-faint)] rounded-full px-3 py-1.5 mb-6 hover:border-[var(--border-strong)] transition-colors"
           >
             {step.extraLink.label}
           </a>
@@ -126,7 +126,7 @@ export default function Onboarding() {
 
         <button
           onClick={() => handlePrimary(step)}
-          className="w-full bg-emerald-500 hover:bg-emerald-600 transition-colors text-black font-bold rounded-md px-4 py-3 text-sm mb-3"
+          className="w-full bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-3 text-sm mb-3"
         >
           {step.primary.label}
         </button>
@@ -135,7 +135,7 @@ export default function Onboarding() {
           {stepIndex > 0 ? (
             <button
               onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+              className="text-xs text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors"
             >
               ← Précédent
             </button>
@@ -146,7 +146,7 @@ export default function Onboarding() {
           {step.skip && (
             <button
               onClick={handleSkip}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors underline"
+              className="text-xs text-[var(--text-faint)] hover:text-[var(--text-muted)] transition-colors underline"
             >
               {step.skip}
             </button>
@@ -158,7 +158,7 @@ export default function Onboarding() {
             <span
               key={i}
               className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                i === stepIndex ? 'bg-emerald-500' : 'bg-gray-700'
+                i === stepIndex ? 'bg-[var(--accent)]' : 'bg-[var(--surface-3)]'
               }`}
             />
           ))}
