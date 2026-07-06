@@ -5,7 +5,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   Line,
   LineChart,
   Pie,
@@ -19,10 +18,13 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors } from 
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
-import { daysInMonth, formatMonthLabel, toISODate } from '../utils/dateUtils'
+import { daysInMonth, formatDurationMinutes, formatMonthLabel, toISODate } from '../utils/dateUtils'
 import Modal from '../components/Modal'
 import HabitCell from '../components/HabitCell'
 import DraggableWidget from '../components/DraggableWidget'
+import OfflineBanner from '../components/OfflineBanner'
+import { useOnlineStatus } from '../hooks/useOnlineStatus'
+import { enqueueOfflineAction } from '../utils/offlineQueue'
 
 const STREAK_THRESHOLD = 0.8
 const MAX_STREAK_LOOKBACK_DAYS = 3650
@@ -105,6 +107,44 @@ function truncateLabel(text, max = 15) {
   return text.length > max ? `${text.slice(0, max)}...` : text
 }
 
+// Palette vert/jaune/rouge utilisée par les nouveaux graphiques circulaires
+// et barres horizontales — volontairement distincte de ringColor (anneaux
+// hebdomadaires), qui utilise vert/indigo/gris.
+function percentColor(percent) {
+  if (percent >= 80) return '#10b981'
+  if (percent >= 50) return '#eab308'
+  return '#ef4444'
+}
+
+function RingProgress({ size, radius, strokeWidth, percent, color, children }) {
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference * (1 - Math.min(Math.max(percent, 0), 100) / 100)
+  const center = size / 2
+
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="#1f2937" strokeWidth={strokeWidth} />
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform={`rotate(-90 ${center} ${center})`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-tight">
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function ProgressRing({ percent, label, size = 84 }) {
   const data = [{ value: percent }, { value: 100 - percent }]
   const innerRadius = Math.round(size * 0.38)
@@ -182,6 +222,7 @@ export default function Habits() {
   const { user } = useAuth()
   const today = useMemo(() => new Date(), [])
   const todayISO = toISODate(today)
+  const isOnline = useOnlineStatus()
 
   // Simule l'état Pro en attendant l'intégration Stripe.
   const isPro = true
@@ -189,6 +230,9 @@ export default function Habits() {
   const [habitudes, setHabitudes] = useState([])
   const [completions, setCompletions] = useState([])
   const [sentiments, setSentiments] = useState([])
+  const [projets, setProjets] = useState([])
+  const [sessionsTravail, setSessionsTravail] = useState([])
+  const [openProjectPopoverId, setOpenProjectPopoverId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
@@ -234,7 +278,7 @@ export default function Habits() {
 
     async function load() {
       setLoading(true)
-      const [habitudesRes, completionsRes, sentimentsRes] = await Promise.all([
+      const [habitudesRes, completionsRes, sentimentsRes, projetsRes, sessionsRes] = await Promise.all([
         supabase
           .from('habitudes')
           .select('*')
@@ -243,6 +287,11 @@ export default function Habits() {
           .order('ordre', { ascending: true }),
         supabase.from('completions').select('habitude_id, date').eq('user_id', user.id),
         supabase.from('sentiments').select('date, score').eq('user_id', user.id),
+        supabase.from('projets').select('*').eq('user_id', user.id).eq('actif', true),
+        supabase
+          .from('sessions_travail')
+          .select('projet_id, duree_minutes, date')
+          .eq('user_id', user.id),
       ])
 
       if (cancelled) return
@@ -250,6 +299,8 @@ export default function Habits() {
       setHabitudes(habitudesRes.data ?? [])
       setCompletions(completionsRes.data ?? [])
       setSentiments(sentimentsRes.data ?? [])
+      setProjets(projetsRes.data ?? [])
+      setSessionsTravail(sessionsRes.data ?? [])
       setLoading(false)
     }
 
@@ -448,8 +499,19 @@ export default function Habits() {
   const topHabitudes = rankedHabitudes.slice(0, 3)
   const mostNeglected = rankedHabitudes.length > 0 ? rankedHabitudes[rankedHabitudes.length - 1] : null
 
+  // % de réussite du mois (calendaire réel) par habitude — utilisé par les
+  // graphiques en barres/anneaux par habitude.
+  const habitudeMonthStats = useMemo(() => {
+    const daysElapsed = today.getDate()
+    return rankedHabitudes.map((h) => ({
+      ...h,
+      percent: daysElapsed ? Math.round((h.count / daysElapsed) * 100) : 0,
+    }))
+  }, [rankedHabitudes, today])
+
   const categoryBreakdown = useMemo(() => {
     const daysElapsed = today.getDate()
+    const numDaysMonth = daysInMonth(today.getFullYear(), today.getMonth())
     const groups = new Map()
     habitudes.forEach((h) => {
       const cat = h.categorie || 'Autre'
@@ -467,11 +529,49 @@ export default function Habits() {
         })
       }
       const expected = ids.length * daysElapsed
-      rows.push({ categorie: cat, percent: expected ? Math.round((completed / expected) * 100) : 0 })
+      const percent = expected ? Math.round((completed / expected) * 100) : 0
+      rows.push({
+        categorie: cat,
+        percent,
+        numDaysMonth,
+        completedEquivalent: Math.round((percent / 100) * numDaysMonth),
+      })
     }
     return rows.sort((a, b) => b.percent - a.percent)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completionsSet, habitudes, today])
+
+  const projetsByHabitudeId = useMemo(() => {
+    const map = new Map()
+    projets.forEach((p) => {
+      if (!p.habitude_id) return
+      const list = map.get(p.habitude_id) || []
+      list.push(p)
+      map.set(p.habitude_id, list)
+    })
+    return map
+  }, [projets])
+
+  const workTimeThisMonth = useMemo(() => {
+    const monthPrefix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+    const sessionsThisMonth = sessionsTravail.filter((s) => s.date.startsWith(monthPrefix))
+    const totalMinutes = sessionsThisMonth.reduce((sum, s) => sum + s.duree_minutes, 0)
+
+    const minutesByProjet = new Map()
+    sessionsThisMonth.forEach((s) => {
+      minutesByProjet.set(s.projet_id, (minutesByProjet.get(s.projet_id) || 0) + s.duree_minutes)
+    })
+
+    const byProjet = [...minutesByProjet.entries()]
+      .map(([projetId, minutes]) => ({
+        projet: projets.find((p) => p.id === projetId),
+        minutes,
+      }))
+      .filter((row) => row.projet)
+      .sort((a, b) => b.minutes - a.minutes)
+
+    return { totalMinutes, byProjet }
+  }, [sessionsTravail, projets, today])
 
   const numDays = daysInMonth(viewYear, viewMonth)
   const dayNumbers = Array.from({ length: numDays }, (_, i) => i + 1)
@@ -535,6 +635,16 @@ export default function Habits() {
   const toggleCompletion = async (habitudeId, dateISO, isChecked) => {
     if (isChecked) {
       setCompletions((prev) => prev.filter((c) => !(c.habitude_id === habitudeId && c.date === dateISO)))
+
+      if (!navigator.onLine) {
+        enqueueOfflineAction({
+          type: 'completion',
+          action: 'delete',
+          data: { habitude_id: habitudeId, date: dateISO },
+        })
+        return
+      }
+
       await supabase
         .from('completions')
         .delete()
@@ -543,6 +653,16 @@ export default function Habits() {
         .eq('user_id', user.id)
     } else {
       setCompletions((prev) => [...prev, { habitude_id: habitudeId, date: dateISO }])
+
+      if (!navigator.onLine) {
+        enqueueOfflineAction({
+          type: 'completion',
+          action: 'insert',
+          data: { habitude_id: habitudeId, date: dateISO, user_id: user.id },
+        })
+        return
+      }
+
       const { error } = await supabase
         .from('completions')
         .insert({ habitude_id: habitudeId, date: dateISO, user_id: user.id })
@@ -617,29 +737,6 @@ export default function Habits() {
     return points
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completionsByDate, totalHabitudes])
-
-  const moodChartData = useMemo(() => {
-    const points = []
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(today)
-      d.setDate(d.getDate() - i)
-      const iso = toISODate(d)
-      points.push({
-        label: d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-        score: sentimentsByDate.get(iso) ?? null,
-      })
-    }
-    return points
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sentimentsByDate])
-
-  const donutData = useMemo(
-    () => [
-      { name: 'Complétées', value: monthStats.completed },
-      { name: 'Manquées', value: monthStats.missed },
-    ],
-    [monthStats]
-  )
 
   const last7Days = (habitudeId) => {
     const days = []
@@ -930,10 +1027,12 @@ export default function Habits() {
                 const barColor = atteint ? 'bg-emerald-500' : enBonneVoie ? 'bg-orange-500' : 'bg-gray-600'
                 const barWidth = Math.min(100, Math.round((stats.count / objectif) * 100))
 
+                const linkedProjets = projetsByHabitudeId.get(h.id) || []
+
                 return (
                   <tr key={h.id} className="hover:bg-[#111111]">
                     <td className="sticky left-0 bg-[#0a0a0a] px-3 py-1.5 border-b border-gray-900">
-                      <div className="flex items-center gap-2">
+                      <div className="relative flex items-center gap-2">
                         <span>{h.emoji}</span>
                         <div>
                           <p className="text-gray-200">{compact ? truncateLabel(h.nom) : h.nom}</p>
@@ -941,6 +1040,48 @@ export default function Habits() {
                             <p className="text-[10px] text-gray-500">{h.categorie}</p>
                           )}
                         </div>
+                        {linkedProjets.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenProjectPopoverId(openProjectPopoverId === h.id ? null : h.id)
+                            }
+                            title="Projets liés"
+                            className="text-gray-600 hover:text-gray-300 text-xs shrink-0"
+                          >
+                            📁
+                          </button>
+                        )}
+                        {openProjectPopoverId === h.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setOpenProjectPopoverId(null)}
+                            />
+                            <div className="absolute z-50 top-full mt-1 left-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 w-56 shadow-lg">
+                              <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-2">
+                                Projets liés
+                              </p>
+                              <div className="flex flex-col gap-2 mb-2">
+                                {linkedProjets.map((p) => (
+                                  <div key={p.id} className="flex items-center gap-2 text-sm">
+                                    <span
+                                      className="w-2 h-2 rounded-full shrink-0"
+                                      style={{ background: p.couleur }}
+                                    />
+                                    <span className="text-gray-200">{p.nom}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <Link
+                                to={`/projects/${linkedProjets[0].id}`}
+                                className="text-xs text-emerald-500 hover:underline"
+                              >
+                                Voir les sessions →
+                              </Link>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </td>
                     {dayNumbers.map((day) => {
@@ -1079,128 +1220,315 @@ export default function Habits() {
     )
   }
 
-  const renderChartSection = () => (
-    <div className="border border-gray-800 rounded-lg p-4 mb-12">
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <p className="text-sm text-gray-300">
-          {effectiveChartType === 'donut'
-            ? 'Répartition ce mois'
-            : effectiveChartType === 'mood'
-              ? 'Humeur sur 30 jours'
-              : 'Progression sur 30 jours'}
-        </p>
-        <div className="flex items-center gap-2">
-          {[
-            { type: 'line', icon: '📈' },
-            { type: 'bar', icon: '📊' },
-            { type: 'donut', icon: '🍩' },
-            { type: 'mood', icon: '😊' },
-          ].map((opt) => {
-            const locked = opt.type !== 'line' && !isPro
-            return (
-              <div key={opt.type} className="relative group/tooltip">
-                <button
-                  onClick={() => !locked && handleChartTypeChange(opt.type)}
-                  disabled={locked}
-                  className={`w-8 h-8 rounded-md flex items-center justify-center text-sm border transition-colors ${
-                    locked
-                      ? 'bg-[#1a1a1a] border-gray-800 text-gray-700 cursor-not-allowed'
-                      : effectiveChartType === opt.type
-                        ? 'bg-emerald-500 border-emerald-500 text-black'
-                        : 'bg-[#1a1a1a] border-gray-700 text-white'
-                  }`}
-                >
-                  {opt.icon}
-                </button>
-                {locked && (
-                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#1a1a1a] border border-gray-700 text-gray-300 text-[10px] rounded px-2 py-1 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none">
-                    Pro 🔒
-                  </span>
-                )}
-              </div>
-            )
-          })}
+  const CHART_TYPE_TITLES = {
+    line: 'Progression sur 30 jours',
+    bar: 'Progression sur 30 jours',
+    bars_habits: 'Taux de réussite par habitude',
+    bars_categories: 'Taux de réussite par catégorie',
+    bars_topflop: 'Top & Flop ce mois',
+    rings_habits: 'Anneaux par habitude',
+    rings_categories: 'Répartition par catégorie',
+    rings_global: "Vue d'ensemble du mois",
+  }
+
+  const CHART_TYPE_GROUPS = [
+    [
+      { type: 'line', icon: '📈' },
+      { type: 'bar', icon: '📊' },
+      { type: 'bars_habits', icon: '≡' },
+      { type: 'bars_categories', icon: '⊟' },
+      { type: 'bars_topflop', icon: '⊞' },
+    ],
+    [
+      { type: 'rings_habits', icon: '🔵' },
+      { type: 'rings_categories', icon: '⭕' },
+      { type: 'rings_global', icon: '🎯' },
+    ],
+  ]
+
+  const renderChartTypeButton = (opt) => {
+    const locked = opt.type !== 'line' && !isPro
+    return (
+      <div key={opt.type} className="relative group/tooltip">
+        <button
+          onClick={() => !locked && handleChartTypeChange(opt.type)}
+          disabled={locked}
+          className={`w-7 h-7 rounded-md flex items-center justify-center text-xs border transition-colors ${
+            locked
+              ? 'bg-[#1a1a1a] border-gray-800 text-gray-700 cursor-not-allowed'
+              : effectiveChartType === opt.type
+                ? 'bg-emerald-500 border-emerald-500 text-black'
+                : 'bg-[#1a1a1a] border-gray-700 text-white'
+          }`}
+        >
+          {opt.icon}
+        </button>
+        {locked && (
+          <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap bg-[#1a1a1a] border border-gray-700 text-gray-300 text-[10px] rounded px-2 py-1 opacity-0 group-hover/tooltip:opacity-100 transition-opacity pointer-events-none">
+            Pro 🔒
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const renderChartBarsHabits = () => (
+    <div className="flex flex-col gap-3 py-2">
+      {habitudeMonthStats.map((h) => (
+        <div key={h.id} className="flex items-center gap-3">
+          <span className="text-xs text-gray-300 w-[140px] shrink-0 truncate">
+            {h.emoji} {h.nom}
+          </span>
+          <div className="flex-1 h-1.5 bg-[#1f2937] rounded overflow-hidden">
+            <div
+              className="h-full rounded"
+              style={{ width: `${h.percent}%`, background: percentColor(h.percent) }}
+            />
+          </div>
+          <span
+            className="text-xs font-semibold w-9 shrink-0 text-right"
+            style={{ color: percentColor(h.percent) }}
+          >
+            {h.percent}%
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+
+  const renderChartBarsCategories = () => (
+    <div className="flex flex-col gap-3.5 py-2">
+      {categoryBreakdown.map((row) => (
+        <div key={row.categorie} className="flex items-center gap-3">
+          <span className="text-[11px] uppercase tracking-wide text-gray-400 w-[100px] shrink-0 truncate">
+            {row.categorie}
+          </span>
+          <div className="flex-1 h-1.5 bg-[#1f2937] rounded overflow-hidden">
+            <div
+              className="h-full rounded"
+              style={{ width: `${row.percent}%`, background: percentColor(row.percent) }}
+            />
+          </div>
+          <span className="text-[11px] text-gray-500 w-[60px] shrink-0 text-right">
+            {row.completedEquivalent} / {row.numDaysMonth} j
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+
+  const renderChartBarsTopFlop = () => {
+    const sortedDesc = [...habitudeMonthStats].sort((a, b) => b.percent - a.percent)
+    const top3 = sortedDesc.slice(0, 3)
+    const flop3 = [...sortedDesc].sort((a, b) => a.percent - b.percent).slice(0, 3)
+
+    const renderRow = (h, badgeLabel, badgeBg, badgeColor) => (
+      <div key={h.id} className="flex items-center gap-2">
+        <span
+          className="text-[10px] font-bold rounded-[3px] px-1.5 py-0.5 shrink-0"
+          style={{ background: badgeBg, color: badgeColor }}
+        >
+          {badgeLabel}
+        </span>
+        <span className="text-xs text-gray-200 truncate flex-1">
+          {h.emoji} {h.nom}
+        </span>
+        <span className="text-xs font-semibold shrink-0" style={{ color: badgeColor }}>
+          {h.percent}%
+        </span>
+      </div>
+    )
+
+    return (
+      <div className="grid grid-cols-2 gap-5 py-2">
+        <div className="flex flex-col gap-2.5">
+          <p className="text-xs text-gray-500 mb-1">Top ce mois</p>
+          {top3.map((h) => renderRow(h, 'TOP', '#052e1f', '#10b981'))}
+        </div>
+        <div className="flex flex-col gap-2.5 border-l-[0.5px] border-[#1f1f1f] pl-5">
+          <p className="text-xs text-gray-500 mb-1">Flop ce mois</p>
+          {flop3.map((h) => renderRow(h, 'FLOP', '#2d0a0a', '#ef4444'))}
         </div>
       </div>
-      <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
-          {effectiveChartType === 'bar' ? (
-            <BarChart data={chartData}>
-              <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
-              <YAxis
-                domain={[0, 100]}
-                stroke="#6b7280"
-                fontSize={11}
-                tickFormatter={(v) => `${v}%`}
-                width={40}
+    )
+  }
+
+  const renderChartRingsHabits = () => (
+    <div className="flex flex-wrap gap-4 justify-center py-2">
+      {habitudeMonthStats.map((h) => (
+        <div key={h.id} className="flex flex-col items-center gap-1.5 w-20">
+          <RingProgress
+            size={64}
+            radius={26}
+            strokeWidth={6}
+            percent={h.percent}
+            color={percentColor(h.percent)}
+          >
+            <span style={{ fontSize: 11, fontWeight: 700, color: '#f5f5f5' }}>{h.percent}%</span>
+          </RingProgress>
+          <span className="text-center" style={{ fontSize: 10, color: '#6b7280' }}>
+            {h.emoji} {truncateLabel(h.nom, 12)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+
+  const RING_CATEGORY_RADII = [60, 48, 36, 24]
+
+  const renderChartRingsCategories = () => {
+    const cats = categoryBreakdown.slice(0, 4)
+    const size = 140
+    const center = size / 2
+
+    return (
+      <div className="flex items-center justify-center gap-8 py-2">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0">
+          {cats.map((cat, i) => {
+            const radius = RING_CATEGORY_RADII[i]
+            const circumference = 2 * Math.PI * radius
+            const offset = circumference * (1 - Math.min(cat.percent, 100) / 100)
+            const color = percentColor(cat.percent)
+            return (
+              <g key={cat.categorie}>
+                <circle cx={center} cy={center} r={radius} fill="none" stroke="#1f2937" strokeWidth={8} />
+                <circle
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={8}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={offset}
+                  strokeLinecap="round"
+                  transform={`rotate(-90 ${center} ${center})`}
+                />
+              </g>
+            )
+          })}
+        </svg>
+        <div className="flex flex-col gap-2.5">
+          {cats.map((cat) => (
+            <div key={cat.categorie} className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ background: percentColor(cat.percent) }}
               />
-              <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
-              <Bar dataKey="taux" fill="#10b981" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          ) : effectiveChartType === 'donut' ? (
-            <PieChart>
-              <Pie
-                data={donutData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={60}
-                outerRadius={90}
-                paddingAngle={2}
-              >
-                <Cell fill="#10b981" />
-                <Cell fill="#374151" />
-              </Pie>
-              <Tooltip {...chartTooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />
-            </PieChart>
-          ) : effectiveChartType === 'mood' ? (
-            <LineChart data={moodChartData}>
-              <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
-              <YAxis domain={[1, 10]} stroke="#6b7280" fontSize={11} width={30} />
-              <Tooltip {...chartTooltipStyle} formatter={(value) => [value ?? '—', 'Humeur']} />
-              <Line
-                type="monotone"
-                dataKey="score"
-                stroke="#6b7280"
-                strokeDasharray="4 4"
-                strokeWidth={2}
-                connectNulls
-                dot={({ cx, cy, payload, index }) => {
-                  if (payload.score === null || payload.score === undefined) return null
-                  return (
-                    <circle
-                      key={`mood-dot-${index}`}
-                      cx={cx}
-                      cy={cy}
-                      r={4}
-                      fill={moodColor(payload.score)}
-                      stroke="none"
-                    />
-                  )
-                }}
-              />
-            </LineChart>
-          ) : (
-            <LineChart data={chartData}>
-              <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
-              <YAxis
-                domain={[0, 100]}
-                stroke="#6b7280"
-                fontSize={11}
-                tickFormatter={(v) => `${v}%`}
-                width={40}
-              />
-              <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
-              <Line type="monotone" dataKey="taux" stroke="#10b981" strokeWidth={2} dot={false} />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
+              <span className="text-xs text-gray-300">{cat.categorie}</span>
+              <span className="text-xs font-bold" style={{ color: percentColor(cat.percent) }}>
+                {cat.percent}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const renderChartRingsGlobal = () => (
+    <div className="flex items-center gap-6 py-2 flex-wrap">
+      <RingProgress
+        size={100}
+        radius={42}
+        strokeWidth={8}
+        percent={monthStats.rate}
+        color={percentColor(monthStats.rate)}
+      >
+        <span style={{ fontSize: 16, fontWeight: 700 }}>{monthStats.rate}%</span>
+        <span style={{ fontSize: 9, color: '#6b7280' }}>ce mois</span>
+      </RingProgress>
+      <div className="flex flex-wrap gap-3">
+        {categoryBreakdown.map((cat) => (
+          <div key={cat.categorie} className="flex flex-col items-center gap-1 w-[60px]">
+            <RingProgress
+              size={48}
+              radius={18}
+              strokeWidth={6}
+              percent={cat.percent}
+              color={percentColor(cat.percent)}
+            >
+              <span style={{ fontSize: 9, fontWeight: 700 }}>{cat.percent}%</span>
+            </RingProgress>
+            <span className="text-center truncate w-full" style={{ fontSize: 9, color: '#6b7280' }}>
+              {cat.categorie}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )
+
+  const renderChartSection = () => {
+    const isRechartsType = effectiveChartType === 'line' || effectiveChartType === 'bar'
+
+    return (
+      <div className="border border-gray-800 rounded-lg p-4 mb-12">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <p className="text-sm text-gray-300">
+            {CHART_TYPE_TITLES[effectiveChartType] || 'Progression sur 30 jours'}
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              {CHART_TYPE_GROUPS[0].map(renderChartTypeButton)}
+            </div>
+            <div className="w-[0.5px] h-5 bg-[#2a2a2a] shrink-0" />
+            <div className="flex items-center gap-1">
+              {CHART_TYPE_GROUPS[1].map(renderChartTypeButton)}
+            </div>
+          </div>
+        </div>
+
+        {isRechartsType ? (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              {effectiveChartType === 'bar' ? (
+                <BarChart data={chartData}>
+                  <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
+                  <YAxis
+                    domain={[0, 100]}
+                    stroke="#6b7280"
+                    fontSize={11}
+                    tickFormatter={(v) => `${v}%`}
+                    width={40}
+                  />
+                  <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
+                  <Bar dataKey="taux" fill="#10b981" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              ) : (
+                <LineChart data={chartData}>
+                  <CartesianGrid stroke="#1f1f1f" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="label" stroke="#6b7280" fontSize={11} tickMargin={8} />
+                  <YAxis
+                    domain={[0, 100]}
+                    stroke="#6b7280"
+                    fontSize={11}
+                    tickFormatter={(v) => `${v}%`}
+                    width={40}
+                  />
+                  <Tooltip {...chartTooltipStyle} formatter={(value) => [`${value}%`, 'Taux']} />
+                  <Line type="monotone" dataKey="taux" stroke="#10b981" strokeWidth={2} dot={false} />
+                </LineChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        ) : effectiveChartType === 'bars_habits' ? (
+          renderChartBarsHabits()
+        ) : effectiveChartType === 'bars_categories' ? (
+          renderChartBarsCategories()
+        ) : effectiveChartType === 'bars_topflop' ? (
+          renderChartBarsTopFlop()
+        ) : effectiveChartType === 'rings_habits' ? (
+          renderChartRingsHabits()
+        ) : effectiveChartType === 'rings_categories' ? (
+          renderChartRingsCategories()
+        ) : (
+          renderChartRingsGlobal()
+        )}
+      </div>
+    )
+  }
 
   const renderAdvancedStatsMain = () => (
     <div className="mb-4">
@@ -1227,7 +1555,7 @@ export default function Habits() {
         </div>
       </div>
 
-      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
+      <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5 mb-4">
         <p className="text-sm text-gray-400 mb-2">Habitude la plus négligée</p>
         {mostNeglected && (
           <p className="text-base">
@@ -1235,6 +1563,34 @@ export default function Habits() {
           </p>
         )}
       </div>
+
+      {workTimeThisMonth.byProjet.length > 0 && (
+        <div className="bg-[#141414] border border-[#2a2a2a] rounded-lg p-5">
+          <p className="text-sm text-gray-400 mb-1">Temps de travail ce mois</p>
+          <p className="text-2xl font-bold mb-4">
+            {formatDurationMinutes(workTimeThisMonth.totalMinutes)}
+          </p>
+          <div className="flex flex-col gap-3">
+            {workTimeThisMonth.byProjet.map(({ projet, minutes }) => (
+              <div key={projet.id} className="flex items-center gap-3">
+                <span className="text-xs text-gray-400 w-28 shrink-0 truncate">{projet.nom}</span>
+                <div className="flex-1 h-2 bg-[#1f2937] rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.round((minutes / workTimeThisMonth.totalMinutes) * 100)}%`,
+                      background: projet.couleur,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-gray-500 w-16 text-right shrink-0">
+                  {formatDurationMinutes(minutes)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 
@@ -1541,7 +1897,9 @@ export default function Habits() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12">
+    <>
+      <OfflineBanner isOnline={isOnline} />
+      <div className="max-w-6xl mx-auto px-6 py-12">
       <div className="flex items-center justify-between mb-8 gap-4 flex-wrap">
         <h1 className="text-3xl font-bold">Habitudes</h1>
         <div className="flex items-center gap-3 flex-wrap">
@@ -1678,6 +2036,7 @@ export default function Habits() {
           : effectiveLayout === 'zen'
             ? renderZenLayout()
             : renderFocusLayout()}
-    </div>
+      </div>
+    </>
   )
 }

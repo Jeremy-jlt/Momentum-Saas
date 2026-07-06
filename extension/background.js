@@ -25,7 +25,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'startManualSession') {
-    startManualSession().then(() => sendResponse({ ok: true }))
+    startManualSession(message.session).then(() => sendResponse({ ok: true }))
     return true
   }
   if (message?.type === 'stopSession') {
@@ -205,31 +205,144 @@ async function syncWithSupabase() {
   })
 }
 
-async function startManualSession() {
-  const domains = allDomains()
+function currentTimeHHMM() {
+  return new Date().toTimeString().slice(0, 5)
+}
+
+function currentDateISO() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// sessionInfo (optionnel, envoyé par le formulaire de déclaration de travail
+// du popup) : { tache, projet_id, projet_nom, habitude_id, habitude_nom,
+// duree_minutes, sites_bloques }. Sans sessionInfo, on retombe sur l'ancien
+// comportement (bloque tout, 25 minutes) pour ne rien casser.
+async function startManualSession(sessionInfo) {
+  const domains = sessionInfo?.sites_bloques?.length
+    ? domainsForLabels(sessionInfo.sites_bloques)
+    : allDomains()
   await applyBlockRules(domains)
 
-  const endsAt = Date.now() + MANUAL_SESSION_MINUTES * 60 * 1000
+  const dureeMinutes = sessionInfo?.duree_minutes || MANUAL_SESSION_MINUTES
+  const endsAt = Date.now() + dureeMinutes * 60 * 1000
 
   await chrome.storage.local.set({
     momentum_active_session: {
       source: 'manual',
-      nom: 'Session de test',
+      nom: sessionInfo?.tache || 'Session de test',
       domains,
       endsAt,
     },
   })
 
-  chrome.alarms.create(MANUAL_SESSION_ALARM, { delayInMinutes: MANUAL_SESSION_MINUTES })
+  if (sessionInfo) {
+    const auth = await getAuth()
+    await chrome.storage.local.set({
+      sessionActive: {
+        tache: sessionInfo.tache,
+        projet_id: sessionInfo.projet_id,
+        projet_nom: sessionInfo.projet_nom,
+        habitude_id: sessionInfo.habitude_id || null,
+        habitude_nom: sessionInfo.habitude_nom || null,
+        temps_minimum_minutes: sessionInfo.temps_minimum_minutes || 30,
+        duree_minutes: dureeMinutes,
+        heure_debut: currentTimeHHMM(),
+        sites_bloques: sessionInfo.sites_bloques || [],
+        user_id: auth?.user?.id,
+      },
+    })
+  } else {
+    await chrome.storage.local.remove('sessionActive')
+  }
+
+  chrome.alarms.clear(MANUAL_SESSION_ALARM)
+  chrome.alarms.create(MANUAL_SESSION_ALARM, { delayInMinutes: dureeMinutes })
+}
+
+// Enregistre la session de travail terminée dans Supabase et, si le projet
+// est lié à une habitude, coche automatiquement cette habitude pour aujourd'hui.
+async function finalizeSessionActive() {
+  const { sessionActive } = await chrome.storage.local.get('sessionActive')
+  if (!sessionActive) return
+
+  const today = currentDateISO()
+  let habitudeCochee = false
+
+  try {
+    const [createdSession] = await supabasePost('sessions_travail', {
+      user_id: sessionActive.user_id,
+      projet_id: sessionActive.projet_id,
+      tache: sessionActive.tache,
+      duree_minutes: sessionActive.duree_minutes,
+      date: today,
+      heure_debut: sessionActive.heure_debut,
+      heure_fin: currentTimeHHMM(),
+      sites_bloques: sessionActive.sites_bloques || [],
+      completion_creee: false,
+    })
+
+    const tempsMinimum = sessionActive.temps_minimum_minutes || 30
+    const dureeSuffisante = sessionActive.duree_minutes >= tempsMinimum
+
+    if (sessionActive.habitude_id && dureeSuffisante) {
+      try {
+        await supabaseUpsert(
+          'completions',
+          { habitude_id: sessionActive.habitude_id, date: today, user_id: sessionActive.user_id },
+          'habitude_id,date'
+        )
+        habitudeCochee = true
+
+        if (createdSession?.id) {
+          await supabasePatch(`sessions_travail?id=eq.${createdSession.id}`, {
+            completion_creee: true,
+          })
+        }
+      } catch (err) {
+        console.error('[Momentum] Échec de la completion automatique :', err)
+      }
+    }
+  } catch (err) {
+    console.error("[Momentum] Échec de l'enregistrement de la session de travail :", err)
+  }
+
+  const tempsMinimumMinutes = sessionActive.temps_minimum_minutes || 30
+  const sessionTropCourte =
+    !!sessionActive.habitude_id && !habitudeCochee && sessionActive.duree_minutes < tempsMinimumMinutes
+
+  await chrome.storage.local.set({
+    momentum_session_summary: {
+      duree_minutes: sessionActive.duree_minutes,
+      projet_nom: sessionActive.projet_nom,
+      habitude_nom: habitudeCochee ? sessionActive.habitude_nom : null,
+      habitude_nom_visee: sessionActive.habitude_id ? sessionActive.habitude_nom : null,
+      session_trop_courte: sessionTropCourte,
+      temps_minimum_minutes: tempsMinimumMinutes,
+    },
+  })
+
+  await chrome.storage.local.remove('sessionActive')
 }
 
 async function endManualSession() {
+  await finalizeSessionActive()
   await clearBlockRules()
   await chrome.storage.local.set({ momentum_active_session: null })
+
+  // Prévient le popup s'il est ouvert (chrome.alarms n'étant pas précis à la
+  // milliseconde, le popup ne peut pas se fier uniquement à son propre
+  // compte à rebours pour savoir quand la session est réellement terminée).
+  // Si le popup est fermé, sendMessage rejette silencieusement — c'est attendu.
+  chrome.runtime.sendMessage({ type: 'sessionEnded' }).catch(() => {})
 }
 
 async function stopSession() {
   chrome.alarms.clear(MANUAL_SESSION_ALARM)
   await clearBlockRules()
   await chrome.storage.local.set({ momentum_active_session: null })
+  await chrome.storage.local.remove('sessionActive')
 }

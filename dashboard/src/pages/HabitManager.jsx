@@ -18,6 +18,8 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 import { EMOJI_PICKER_GROUPS, FREE_HABIT_LIMIT, HABIT_CATEGORIES } from '../data/habitOptions'
 import Modal from '../components/Modal'
+import OfflineBanner from '../components/OfflineBanner'
+import { useOnlineStatus } from '../hooks/useOnlineStatus'
 
 const DEFAULT_OBJECTIF_JOURS = 30
 
@@ -86,6 +88,7 @@ function SortableHabitRow({ id, children }) {
 export default function HabitManager() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const isOnline = useOnlineStatus()
 
   // Simule l'état Pro en attendant l'intégration Stripe.
   const isPro = true
@@ -261,7 +264,9 @@ export default function HabitManager() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
+    <>
+      <OfflineBanner isOnline={isOnline} />
+      <div className="max-w-3xl mx-auto px-6 py-12">
       <div className="flex items-center justify-between gap-4 flex-wrap mb-6">
         <h1 className="text-3xl font-bold">Gérer mes habitudes</h1>
         <button
@@ -526,6 +531,7 @@ export default function HabitManager() {
           Terminer et voir ma grille →
         </button>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

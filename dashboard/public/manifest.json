@@ -1,0 +1,10 @@
+{
+  "name": "Momentum",
+  "short_name": "Momentum",
+  "description": "Chaque jour compte. Chaque distraction coûte.",
+  "theme_color": "#0a0a0a",
+  "background_color": "#0a0a0a",
+  "display": "standalone",
+  "start_url": "/",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

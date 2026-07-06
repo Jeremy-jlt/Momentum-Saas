@@ -11,6 +11,10 @@ import MobileVerify from './pages/MobileVerify'
 import Habits from './pages/Habits'
 import HabitTemplates from './pages/HabitTemplates'
 import HabitManager from './pages/HabitManager'
+import Projects from './pages/Projects'
+import ProjectDetail from './pages/ProjectDetail'
+import Profile from './pages/Profile'
+import Pricing from './pages/Pricing'
 
 export default function App() {
   return (
@@ -21,6 +25,15 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/new"
           element={
@@ -66,6 +79,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <HabitManager />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <Projects />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:id"
+          element={
+            <ProtectedRoute>
+              <ProjectDetail />
             </ProtectedRoute>
           }
         />

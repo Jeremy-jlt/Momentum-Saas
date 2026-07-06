@@ -105,5 +105,70 @@ async function supabaseGet(endpoint) {
   return res.json()
 }
 
+// method: 'POST' | 'PATCH'. `preferHeader` permet de personnaliser l'en-tête
+// Prefer (ex: résolution d'upsert sur conflit d'unicité).
+async function supabaseWrite(method, endpoint, body, preferHeader) {
+  const auth = await getAuth()
+  if (!auth) {
+    throw new Error('Non connecté')
+  }
+
+  const doRequest = async (token) =>
+    fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+      method,
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        Prefer: preferHeader || 'return=representation',
+      },
+      body: JSON.stringify(body),
+    })
+
+  let res = await doRequest(auth.access_token)
+
+  if (res.status === 401) {
+    try {
+      const refreshed = await refreshSession()
+      res = await doRequest(refreshed.access_token)
+    } catch (err) {
+      await clearAuth()
+      throw new Error('Session expirée, reconnecte-toi.')
+    }
+  }
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}))
+    throw new Error(errData.message || `Erreur Supabase (${res.status})`)
+  }
+
+  return res.json()
+}
+
+async function supabasePost(endpoint, body) {
+  return supabaseWrite('POST', endpoint, body)
+}
+
+async function supabasePatch(endpoint, body) {
+  return supabaseWrite('PATCH', endpoint, body)
+}
+
+// Insère en ignorant silencieusement les conflits d'unicité (ex: une
+// completion déjà existante pour ce jour). `onConflict` liste les colonnes de
+// la contrainte unique concernée (ex: "habitude_id,date").
+async function supabaseUpsert(endpoint, body, onConflict) {
+  const query = onConflict ? `${endpoint}?on_conflict=${onConflict}` : endpoint
+  return supabaseWrite('POST', query, body, 'resolution=merge-duplicates,return=representation')
+}
+
 // eslint-disable-next-line no-unused-vars
-const MomentumSupabase = { signIn, getAuth, clearAuth, refreshSession, supabaseGet }
+const MomentumSupabase = {
+  signIn,
+  getAuth,
+  clearAuth,
+  refreshSession,
+  supabaseGet,
+  supabasePost,
+  supabasePatch,
+  supabaseUpsert,
+}

@@ -45,5 +45,9 @@ function allDomains() {
   return [...new Set(Object.values(BLOCKED_SITES_MAP).flat())]
 }
 
+function allLabels() {
+  return Object.keys(BLOCKED_SITES_MAP)
+}
+
 // eslint-disable-next-line no-unused-vars
-const MomentumBlockedSites = { BLOCKED_SITES_MAP, domainsForLabels, allDomains }
+const MomentumBlockedSites = { BLOCKED_SITES_MAP, domainsForLabels, allDomains, allLabels }

@@ -46,9 +46,12 @@
         margin-bottom: 4px;
       }
       input[type='email'],
-      input[type='password'] {
+      input[type='password'],
+      input[type='text'],
+      input[type='number'],
+      select {
         width: 100%;
-        background: transparent;
+        background: #0a0a0a;
         border: 1px solid #374151;
         border-radius: 6px;
         padding: 8px 10px;
@@ -57,7 +60,8 @@
         font-size: 13px;
         margin-bottom: 12px;
       }
-      input:focus {
+      input:focus,
+      select:focus {
         outline: none;
         border-color: #10b981;
       }
@@ -136,6 +140,13 @@
         font-size: 12px;
         margin-bottom: 10px;
       }
+      .empty-sub.warning {
+        color: #f59e0b;
+      }
+      .end-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+      }
     </style>
   </head>
   <body>
@@ -167,12 +178,47 @@
     <div id="view-empty" class="hidden">
       <p class="email" id="empty-email"></p>
       <p class="empty-title">Aucune session active</p>
-      <p class="empty-sub">Lance un test ou attends ta prochaine session planifiée.</p>
-      <button id="btn-manual" class="btn-primary">Tester 25 minutes</button>
+      <p class="empty-sub">Déclare ce sur quoi tu vas travailler pour démarrer.</p>
+      <button id="btn-manual" class="btn-primary">Démarrer une session</button>
       <button id="btn-logout-2" class="btn-secondary">Déconnexion</button>
     </div>
 
+    <div id="view-start-session" class="hidden">
+      <p class="email" id="start-email"></p>
+
+      <label for="tache">Que vas-tu faire ?</label>
+      <input id="tache" type="text" placeholder="Ex: Chapitre 3 thermodynamique" />
+
+      <label for="projet">Projet</label>
+      <select id="projet"></select>
+      <input id="new-projet-nom" type="text" placeholder="Nom du nouveau projet" class="hidden" />
+
+      <label for="duree">Durée</label>
+      <select id="duree">
+        <option value="25">25 min</option>
+        <option value="45">45 min</option>
+        <option value="60">60 min</option>
+        <option value="90">90 min</option>
+        <option value="custom">Personnalisé</option>
+      </select>
+      <input id="duree-custom" type="number" min="1" placeholder="Minutes" class="hidden" />
+
+      <p id="start-error" class="error hidden"></p>
+      <button id="btn-start-session" class="btn-primary">Démarrer la session →</button>
+      <button id="btn-cancel-start" class="btn-secondary">Annuler</button>
+    </div>
+
+    <div id="view-session-end" class="hidden">
+      <p class="end-icon">✓</p>
+      <p class="empty-title">Session terminée !</p>
+      <p class="empty-sub" id="end-summary"></p>
+      <p class="empty-sub hidden" id="end-habitude"></p>
+      <button id="btn-new-session" class="btn-primary">Nouvelle session</button>
+      <button id="btn-close-end" class="btn-secondary">Fermer</button>
+    </div>
+
     <script src="supabase.js"></script>
+    <script src="blockedSites.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
