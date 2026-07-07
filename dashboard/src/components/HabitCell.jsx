@@ -11,6 +11,14 @@ import { useState } from 'react'
 const CHECKED_GREEN = 'var(--accent)'
 const CHECKED_GREEN_HOVER = 'var(--accent-hover)'
 
+// Couleur des jours manqués — personnalisable (préférence "Affichage"), le
+// rouge par défaut peut être perçu comme anxiogène par certains utilisateurs.
+const MISSED_COLOR_CLASS = {
+  rouge: 'bg-[var(--danger)] hover:bg-[var(--danger-strong)]',
+  gris: 'bg-[var(--surface-3)] hover:bg-[var(--border-strong)]',
+  orange: 'bg-[#c2670f] hover:bg-[#a8560a]',
+}
+
 export default function HabitCell({
   state,
   onClick,
@@ -19,6 +27,7 @@ export default function HabitCell({
   fontSize = 'text-[9px]',
   style,
   shake = false,
+  missedColor = 'rouge',
 }) {
   const [pressed, setPressed] = useState(false)
   const [rippling, setRippling] = useState(false)
@@ -27,7 +36,7 @@ export default function HabitCell({
   const stateClass = {
     checked: 'text-white font-bold cursor-pointer',
     unchecked: 'bg-[var(--cell-empty)] hover:bg-[var(--cell-empty-hover)] cursor-pointer',
-    missed: 'bg-[var(--danger)] hover:bg-[var(--danger-strong)] text-white cursor-pointer',
+    missed: `${MISSED_COLOR_CLASS[missedColor] || MISSED_COLOR_CLASS.rouge} text-white cursor-pointer`,
     future: 'bg-[var(--cell-future)] opacity-40 cursor-not-allowed',
     custom: 'text-white cursor-pointer',
   }[state]

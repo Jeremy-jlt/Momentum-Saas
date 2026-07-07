@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 import { SkeletonBlock } from '../components/Skeleton'
+import { getCached, setCached } from '../utils/dataCache'
+import { useToast } from '../components/Toast'
+import EmptyState, { EngagementsIllustration } from '../components/EmptyState'
 
 const STATUS_STYLES = {
   en_cours: { label: 'En cours', dot: 'bg-[var(--text-subtle)]' },
@@ -12,15 +15,19 @@ const STATUS_STYLES = {
 
 export default function Engagements() {
   const { user } = useAuth()
-  const [engagements, setEngagements] = useState([])
-  const [loading, setLoading] = useState(true)
+  const showToast = useToast()
+  const cacheKey = `engagements:${user.id}`
+  const cached = getCached(cacheKey)
+
+  const [engagements, setEngagements] = useState(() => cached ?? [])
+  const [loading, setLoading] = useState(() => cached === undefined)
 
   useEffect(() => {
     if (!user) return
     let cancelled = false
 
     async function fetchEngagements() {
-      setLoading(true)
+      if (getCached(cacheKey) === undefined) setLoading(true)
       const { data, error } = await supabase
         .from('engagements')
         .select('*')
@@ -28,7 +35,12 @@ export default function Engagements() {
         .order('created_at', { ascending: false })
 
       if (cancelled) return
-      if (!error) setEngagements(data ?? [])
+      if (!error) {
+        setEngagements(data ?? [])
+        setCached(cacheKey, data ?? [])
+      } else {
+        showToast('Impossible de charger tes engagements.', 'error')
+      }
       setLoading(false)
     }
 
@@ -36,12 +48,17 @@ export default function Engagements() {
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const handleDelete = async (id) => {
     const { error } = await supabase.from('engagements').delete().eq('id', id)
     if (!error) {
       setEngagements((prev) => prev.filter((e) => e.id !== id))
+      setCached(cacheKey, engagements.filter((e) => e.id !== id))
+      showToast('Engagement supprimé.', 'success')
+    } else {
+      showToast("La suppression de l'engagement a échoué.", 'error')
     }
   }
 
@@ -57,17 +74,14 @@ export default function Engagements() {
 
   if (engagements.length === 0) {
     return (
-      <div className="max-w-xl mx-auto px-6 py-24 text-center">
-        <h1 className="text-2xl font-bold mb-2">Aucun engagement pour le moment</h1>
-        <p className="text-[var(--text-faint)] mb-8">
-          Le premier pas vers plus de concentration commence maintenant.
-        </p>
-        <Link
-          to="/new"
-          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm"
-        >
-          Créer un engagement
-        </Link>
+      <div className="max-w-xl mx-auto px-6">
+        <EmptyState
+          illustration={<EngagementsIllustration />}
+          title="Ton premier engagement t'attend"
+          description="Le premier pas vers plus de concentration commence maintenant."
+          ctaLabel="Créer un engagement"
+          ctaTo="/new"
+        />
       </div>
     )
   }

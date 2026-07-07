@@ -76,7 +76,7 @@ export default function BeamsBackground({ intensity = 'subtle', className = '', 
 
     function frame() {
       const rect = canvas.parentElement.getBoundingClientRect()
-      const isLight = document.documentElement.dataset.theme === 'light'
+      const isLight = document.documentElement.dataset.theme === 'ivory'
 
       ctx.clearRect(0, 0, rect.width, rect.height)
       ctx.filter = 'blur(35px)'

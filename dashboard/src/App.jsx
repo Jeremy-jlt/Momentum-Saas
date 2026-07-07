@@ -20,6 +20,7 @@ const Projects = lazy(() => import('./pages/Projects'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const Profile = lazy(() => import('./pages/Profile'))
 const Pricing = lazy(() => import('./pages/Pricing'))
+const Progress = lazy(() => import('./pages/Progress'))
 
 export default function App() {
   return (
@@ -101,6 +102,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <ProjectDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/progress"
+          element={
+            <ProtectedRoute>
+              <Progress />
             </ProtectedRoute>
           }
         />

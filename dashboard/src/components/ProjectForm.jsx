@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { PROJECT_COLORS } from '../data/projectOptions'
 
 const DEFAULT_TEMPS_MINIMUM = 30
+const NOM_MAX = 50
+const DESCRIPTION_MAX = 100
 
 export default function ProjectForm({ initial, habitudes, onSubmit, onCancel, submitLabel }) {
   const [nom, setNom] = useState(initial?.nom || '')
@@ -38,22 +40,48 @@ export default function ProjectForm({ initial, habitudes, onSubmit, onCancel, su
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-2">Nom du projet</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm text-[var(--text-muted)]">Nom du projet</label>
+          {nom.length >= NOM_MAX * 0.8 && (
+            <span
+              className={`text-[11px] ${
+                nom.length >= NOM_MAX ? 'text-[var(--danger)]' : 'text-[var(--text-faint)]'
+              }`}
+            >
+              {nom.length}/{NOM_MAX}
+            </span>
+          )}
+        </div>
         <input
           type="text"
           value={nom}
           onChange={(e) => setNom(e.target.value)}
+          maxLength={NOM_MAX}
           placeholder="Ex : Thèse de doctorat"
-          className="w-full bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
+          className={`w-full bg-transparent border rounded-md px-3 py-2 text-sm text-[var(--text)] focus:outline-none ${
+            error ? 'border-[var(--danger)]' : 'border-[var(--border)] focus:border-[var(--accent)]'
+          }`}
         />
       </div>
 
       <div>
-        <label className="block text-sm text-[var(--text-muted)] mb-2">Description (optionnel)</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="text-sm text-[var(--text-muted)]">Description (optionnel)</label>
+          {description.length >= DESCRIPTION_MAX * 0.8 && (
+            <span
+              className={`text-[11px] ${
+                description.length >= DESCRIPTION_MAX ? 'text-[var(--danger)]' : 'text-[var(--text-faint)]'
+              }`}
+            >
+              {description.length}/{DESCRIPTION_MAX}
+            </span>
+          )}
+        </div>
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          maxLength={DESCRIPTION_MAX}
           placeholder="Courte description"
           className="w-full bg-transparent border border-[var(--border)] text-[var(--text)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
         />
@@ -127,7 +155,7 @@ export default function ProjectForm({ initial, habitudes, onSubmit, onCancel, su
         <button
           type="button"
           onClick={onCancel}
-          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+          className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
         >
           Annuler
         </button>
@@ -135,7 +163,7 @@ export default function ProjectForm({ initial, habitudes, onSubmit, onCancel, su
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm disabled:opacity-50"
+          className="tap-target bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? 'Enregistrement...' : submitLabel}
         </button>

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 import { HABIT_TEMPLATES } from '../data/habitTemplates'
 import { FREE_HABIT_LIMIT } from '../data/habitOptions'
+import { useToast } from '../components/Toast'
 import { useIsPro } from '../hooks/useIsPro'
 
 export default function HabitTemplates() {
@@ -13,6 +14,7 @@ export default function HabitTemplates() {
   const isAddMode = searchParams.get('mode') === 'add'
 
   const isPro = useIsPro()
+  const showToast = useToast()
 
   const [existingHabitudes, setExistingHabitudes] = useState([])
   const [creating, setCreating] = useState(null)
@@ -24,7 +26,14 @@ export default function HabitTemplates() {
       .from('habitudes')
       .select('nom, ordre, actif')
       .eq('user_id', user.id)
-      .then(({ data }) => setExistingHabitudes(data ?? []))
+      .then(({ data, error: fetchError }) => {
+        if (fetchError) {
+          showToast('Impossible de charger tes habitudes existantes.', 'error')
+          return
+        }
+        setExistingHabitudes(data ?? [])
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const handleSelect = async (template) => {
@@ -66,11 +75,13 @@ export default function HabitTemplates() {
       const { error: insertError } = await supabase.from('habitudes').insert(rows)
       if (insertError) {
         setError(insertError.message)
+        showToast("L'ajout des habitudes du template a échoué.", 'error')
         setCreating(null)
         return
       }
     }
 
+    showToast('Habitudes ajoutées.', 'success')
     navigate('/habits/manage')
   }
 
@@ -140,7 +151,7 @@ export default function HabitTemplates() {
                 className={`rounded-md px-4 py-2 text-sm font-bold transition-colors ${
                   locked
                     ? 'border border-[var(--border)] text-[var(--text-faint)] cursor-not-allowed'
-                    : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] disabled:opacity-50'
+                    : 'bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-[var(--accent-contrast)] disabled:opacity-50 disabled:cursor-not-allowed'
                 }`}
               >
                 {locked

@@ -22,9 +22,12 @@ import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { useToast } from '../components/Toast'
 import { SkeletonBlock } from '../components/Skeleton'
+import CoachMark from '../components/CoachMark'
+import { getCached, setCached } from '../utils/dataCache'
 import { useIsPro } from '../hooks/useIsPro'
 
 const DEFAULT_OBJECTIF_JOURS = 30
+const HABIT_NOM_MAX = 40
 
 function EmojiPicker({ onSelect, onClose }) {
   return (
@@ -115,14 +118,19 @@ export default function HabitManager() {
 
   const isPro = useIsPro()
 
-  const [habitudes, setHabitudes] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `habit-manager:${user.id}`
+  const cached = getCached(cacheKey)
+
+  const [habitudes, setHabitudes] = useState(() => cached ?? [])
+  const [loading, setLoading] = useState(() => cached === undefined)
   const [error, setError] = useState('')
   const [editingNameId, setEditingNameId] = useState(null)
   const [openPickerId, setOpenPickerId] = useState(null)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false)
   const [deleteTargetId, setDeleteTargetId] = useState(null)
+  const [addError, setAddError] = useState('')
+  const dragCoachRef = useRef(null)
 
   const [newNom, setNewNom] = useState('')
   const [newEmoji, setNewEmoji] = useState('🎯')
@@ -141,7 +149,7 @@ export default function HabitManager() {
     let cancelled = false
 
     async function load() {
-      setLoading(true)
+      if (getCached(cacheKey) === undefined) setLoading(true)
       const { data, error: fetchError } = await supabase
         .from('habitudes')
         .select('*')
@@ -154,6 +162,7 @@ export default function HabitManager() {
         setError(fetchError.message)
       } else {
         setHabitudes(data ?? [])
+        setCached(cacheKey, data ?? [])
       }
       setLoading(false)
     }
@@ -162,6 +171,7 @@ export default function HabitManager() {
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   const updateHabitude = async (id, patch) => {
@@ -241,16 +251,16 @@ export default function HabitManager() {
 
   const handleAdd = async () => {
     if (!newNom.trim()) {
-      setError("Donne un nom à ta nouvelle habitude.")
+      setAddError("Donne un nom à ta nouvelle habitude.")
       return
     }
     if (!isPro && activeCount >= FREE_HABIT_LIMIT) {
-      setError(
+      setAddError(
         `Limite atteinte — passe à Pro pour des habitudes illimitées (max ${FREE_HABIT_LIMIT} en gratuit).`
       )
       return
     }
-    setError('')
+    setAddError('')
     setAdding(true)
 
     const maxOrdre = habitudes.reduce((max, h) => Math.max(max, h.ordre ?? 0), -1)
@@ -273,7 +283,7 @@ export default function HabitManager() {
     setAdding(false)
 
     if (insertError) {
-      setError(insertError.message)
+      setAddError(insertError.message)
       showToast("L'ajout de l'habitude a échoué.", 'error')
       return
     }
@@ -305,7 +315,7 @@ export default function HabitManager() {
         <h1 className="text-3xl font-bold">Gérer mes habitudes</h1>
         <button
           onClick={() => setShowTemplateModal(true)}
-          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+          className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
         >
           Changer de template
         </button>
@@ -332,13 +342,13 @@ export default function HabitManager() {
           <div className="flex items-center gap-3 justify-end">
             <button
               onClick={() => setShowTemplateModal(false)}
-              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+              className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Annuler
             </button>
             <button
               onClick={() => navigate('/habits/templates?mode=add')}
-              className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm"
+              className="tap-target bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm"
             >
               Continuer
             </button>
@@ -356,13 +366,13 @@ export default function HabitManager() {
           <div className="flex items-center gap-3 justify-end">
             <button
               onClick={() => setShowDeleteAllModal(false)}
-              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+              className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Annuler
             </button>
             <button
               onClick={handleDeleteAll}
-              className="bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
+              className="tap-target bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
             >
               Tout supprimer
             </button>
@@ -380,13 +390,13 @@ export default function HabitManager() {
           <div className="flex items-center gap-3 justify-end">
             <button
               onClick={() => setDeleteTargetId(null)}
-              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+              className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Annuler
             </button>
             <button
               onClick={() => handleDelete(deleteTargetId)}
-              className="bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
+              className="tap-target bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
             >
               Supprimer
             </button>
@@ -402,13 +412,14 @@ export default function HabitManager() {
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={habitudes.map((h) => h.id)} strategy={verticalListSortingStrategy}>
-          <div className="flex flex-col gap-2 mb-8">
+          <div className="flex flex-col gap-2 mb-8" ref={dragCoachRef}>
             {habitudes.map((h) => (
               <SortableHabitRow key={h.id} id={h.id}>
                 <div className="relative shrink-0">
                   <button
                     type="button"
                     onClick={() => setOpenPickerId(openPickerId === h.id ? null : h.id)}
+                    aria-label={`Changer l'emoji de ${h.nom}`}
                     className="text-2xl hover:bg-[var(--surface-3)] rounded p-1"
                   >
                     {h.emoji || '🎯'}
@@ -517,6 +528,14 @@ export default function HabitManager() {
         </SortableContext>
       </DndContext>
 
+      {habitudes.length > 0 && (
+        <CoachMark
+          id="drag-handle"
+          targetRef={dragCoachRef}
+          message="Glisse la poignée ⠿ pour réorganiser tes habitudes."
+        />
+      )}
+
       <div className="card-glass border border-[var(--border)] rounded-lg p-4 mb-6">
         <p className="text-xs text-[var(--text-faint)] mb-3">Ajouter une habitude</p>
         <div className="flex flex-wrap items-center gap-3">
@@ -524,6 +543,7 @@ export default function HabitManager() {
             <button
               type="button"
               onClick={() => setNewPickerOpen((v) => !v)}
+              aria-label="Choisir un emoji"
               className="text-2xl hover:bg-[var(--surface-3)] rounded p-1"
             >
               {newEmoji}
@@ -539,13 +559,29 @@ export default function HabitManager() {
             )}
           </div>
 
-          <input
-            type="text"
-            value={newNom}
-            onChange={(e) => setNewNom(e.target.value)}
-            placeholder="Nom de l'habitude"
-            className="flex-1 min-w-[160px] bg-transparent border border-[var(--border)] rounded-md px-3 py-2 text-sm focus:outline-none focus:border-[var(--accent)]"
-          />
+          <div className="flex-1 min-w-[160px] relative">
+            <input
+              type="text"
+              value={newNom}
+              onChange={(e) => setNewNom(e.target.value)}
+              maxLength={HABIT_NOM_MAX}
+              placeholder="Nom de l'habitude"
+              className={`w-full bg-transparent border rounded-md px-3 py-2 text-sm focus:outline-none ${
+                addError
+                  ? 'border-[var(--danger)]'
+                  : 'border-[var(--border)] focus:border-[var(--accent)]'
+              }`}
+            />
+            {newNom.length >= HABIT_NOM_MAX * 0.8 && (
+              <span
+                className={`absolute -bottom-4 right-0 text-[10px] ${
+                  newNom.length >= HABIT_NOM_MAX ? 'text-[var(--danger)]' : 'text-[var(--text-faint)]'
+                }`}
+              >
+                {newNom.length}/{HABIT_NOM_MAX}
+              </span>
+            )}
+          </div>
 
           <select
             value={newCategorie}
@@ -562,11 +598,12 @@ export default function HabitManager() {
           <button
             onClick={handleAdd}
             disabled={adding}
-            className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm disabled:opacity-50"
+            className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-4 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {adding ? 'Ajout...' : '+ Ajouter'}
           </button>
         </div>
+        {addError && <p className="text-[var(--danger)] text-xs mt-3">{addError}</p>}
       </div>
 
       {habitudes.length > 0 && (

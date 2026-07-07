@@ -15,6 +15,8 @@ import Modal from '../components/Modal'
 import ProjectForm from '../components/ProjectForm'
 import { useToast } from '../components/Toast'
 import { SkeletonBlock } from '../components/Skeleton'
+import { getCached, setCached } from '../utils/dataCache'
+import { SessionsIllustration } from '../components/EmptyState'
 import { formatDurationMinutes, parseISODate, toISODate } from '../utils/dateUtils'
 
 const SESSIONS_PAGE_SIZE = 20
@@ -34,10 +36,13 @@ export default function ProjectDetail() {
   const navigate = useNavigate()
   const showToast = useToast()
 
-  const [projet, setProjet] = useState(null)
-  const [sessions, setSessions] = useState([])
-  const [habitudes, setHabitudes] = useState([])
-  const [loading, setLoading] = useState(true)
+  const cacheKey = `project-detail:${id}`
+  const cached = getCached(cacheKey)
+
+  const [projet, setProjet] = useState(() => cached?.projet ?? null)
+  const [sessions, setSessions] = useState(() => cached?.sessions ?? [])
+  const [habitudes, setHabitudes] = useState(() => cached?.habitudes ?? [])
+  const [loading, setLoading] = useState(() => cached === undefined)
   const [error, setError] = useState('')
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -49,7 +54,7 @@ export default function ProjectDetail() {
   }, [user, id])
 
   async function load() {
-    setLoading(true)
+    if (getCached(cacheKey) === undefined) setLoading(true)
     const [projetRes, sessionsRes, habitudesRes] = await Promise.all([
       supabase.from('projets').select('*').eq('id', id).eq('user_id', user.id).single(),
       supabase
@@ -65,10 +70,16 @@ export default function ProjectDetail() {
     if (projetRes.error) {
       setError("Ce projet n'existe pas ou ne t'appartient pas.")
     } else {
-      setProjet(projetRes.data)
+      const next = {
+        projet: projetRes.data,
+        sessions: sessionsRes.data ?? [],
+        habitudes: habitudesRes.data ?? [],
+      }
+      setProjet(next.projet)
+      setSessions(next.sessions)
+      setHabitudes(next.habitudes)
+      setCached(cacheKey, next)
     }
-    setSessions(sessionsRes.data ?? [])
-    setHabitudes(habitudesRes.data ?? [])
     setLoading(false)
   }
 
@@ -143,7 +154,7 @@ export default function ProjectDetail() {
         <p className="text-[var(--danger)] mb-6">{error}</p>
         <button
           onClick={() => navigate('/projects')}
-          className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+          className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
         >
           Retour aux projets
         </button>
@@ -217,13 +228,13 @@ export default function ProjectDetail() {
           <div className="flex items-center gap-3 justify-end">
             <button
               onClick={() => setShowDeleteModal(false)}
-              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+              className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Annuler
             </button>
             <button
               onClick={handleDelete}
-              className="bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
+              className="tap-target bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
             >
               Supprimer
             </button>
@@ -258,7 +269,15 @@ export default function ProjectDetail() {
       <h2 className="text-xl font-bold mb-4">Sessions de travail</h2>
 
       {sessions.length === 0 ? (
-        <p className="text-[var(--text-faint)] text-sm">Aucune session enregistrée pour ce projet.</p>
+        <div className="text-center py-12">
+          <div className="mb-4 flex justify-center">
+            <SessionsIllustration />
+          </div>
+          <h3 className="text-section mb-1">Aucune session pour l'instant</h3>
+          <p className="text-body max-w-xs mx-auto">
+            Lance une session bloquée depuis l'extension pour la voir apparaître ici.
+          </p>
+        </div>
       ) : (
         <>
           <div className="flex flex-col gap-3">
@@ -296,7 +315,7 @@ export default function ProjectDetail() {
             <div className="text-center mt-6">
               <button
                 onClick={() => setVisibleCount((v) => v + SESSIONS_PAGE_SIZE)}
-                className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+                className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
               >
                 Afficher plus
               </button>

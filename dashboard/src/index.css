@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/typography.css";
 
 @theme {
   --font-syne: "Syne", sans-serif;
@@ -7,28 +8,30 @@
 }
 
 /*
- * Theme tokens. Dark values below are the project's original hardcoded
- * colors, kept as the default so existing users see no change. Light
- * values are a warm, editorial-style palette for the alternate theme.
- * Components consume these via Tailwind arbitrary values, e.g.
- * bg-[var(--surface-0)], so both themes stay in sync from one place.
+ * Theme tokens — 5 thèmes complets. Chaque thème surcharge le même jeu de
+ * variables sémantiques ; les composants les consomment via des valeurs
+ * arbitraires Tailwind (ex. bg-[var(--surface-0)]), donc tous les thèmes
+ * restent synchronisés depuis ce seul fichier. 'dark'/'light' sont gardés
+ * comme alias vers 'obsidian'/'ivory' (anciens noms de thème, au cas où une
+ * valeur localStorage n'aurait pas encore été migrée par ThemeContext).
  */
 :root,
+[data-theme='obsidian'],
 [data-theme='dark'] {
-  --surface-0: #0a0a0a;
-  --surface-1: #111111;
-  --surface-2: #141414;
-  --surface-3: #1a1a1a;
-  --border: #2a2a2a;
-  --border-faint: #1f1f1f;
+  --surface-0: #060608;
+  --surface-1: #0d0d10;
+  --surface-2: #141418;
+  --surface-3: #1a1a20;
+  --border: #1a1a20;
+  --border-faint: #141418;
   --border-strong: #374151;
-  --text: #e5e5e5;
-  --text-strong: #ffffff;
-  --text-muted: #9ca3af;
-  --text-faint: #6b7280;
-  --text-subtle: #4b5563;
+  --text: #e8e8ee;
+  --text-strong: #f0f0f5;
+  --text-muted: #6b7280;
+  --text-faint: #565f6e;
+  --text-subtle: #3f4757;
   --accent: #10b981;
-  --accent-hover: #059669;
+  --accent-hover: #0d9668;
   --accent-contrast: #052e1f;
   --danger: #ef4444;
   --danger-strong: #dc2626;
@@ -38,6 +41,79 @@
   --cell-future: #111827;
 }
 
+[data-theme='void-blue'] {
+  --surface-0: #02040f;
+  --surface-1: #080d1a;
+  --surface-2: #0f1525;
+  --surface-3: #151d30;
+  --border: #151d30;
+  --border-faint: #0f1525;
+  --border-strong: #334155;
+  --text: #dbe2f2;
+  --text-strong: #e8edf8;
+  --text-muted: #64748b;
+  --text-faint: #4c5b73;
+  --text-subtle: #38445c;
+  --accent: #60a5fa;
+  --accent-hover: #3b82f6;
+  --accent-contrast: #0a1a33;
+  --danger: #ef4444;
+  --danger-strong: #dc2626;
+  --danger-bg: #2d0a0a;
+  --cell-empty: #1f2937;
+  --cell-empty-hover: #2a3548;
+  --cell-future: #111827;
+}
+
+[data-theme='ember'] {
+  --surface-0: #0a0603;
+  --surface-1: #120c05;
+  --surface-2: #1a1208;
+  --surface-3: #221a0a;
+  --border: #221a0a;
+  --border-faint: #1a1208;
+  --border-strong: #44403c;
+  --text: #f0e9dd;
+  --text-strong: #faf5ee;
+  --text-muted: #78716c;
+  --text-faint: #5c564f;
+  --text-subtle: #443f39;
+  --accent: #f97316;
+  --accent-hover: #ea6c0a;
+  --accent-contrast: #2a1205;
+  --danger: #ef4444;
+  --danger-strong: #dc2626;
+  --danger-bg: #2d0a0a;
+  --cell-empty: #241a10;
+  --cell-empty-hover: #2f2314;
+  --cell-future: #1a1208;
+}
+
+[data-theme='amethyst'] {
+  --surface-0: #050309;
+  --surface-1: #0c0812;
+  --surface-2: #130f1c;
+  --surface-3: #1c1528;
+  --border: #1c1528;
+  --border-faint: #130f1c;
+  --border-strong: #4c4069;
+  --text: #e6e2f7;
+  --text-strong: #f0eeff;
+  --text-muted: #7c6f9e;
+  --text-faint: #5e5478;
+  --text-subtle: #453c5c;
+  --accent: #a78bfa;
+  --accent-hover: #8b5cf6;
+  --accent-contrast: #1f1033;
+  --danger: #ef4444;
+  --danger-strong: #dc2626;
+  --danger-bg: #2d0a0a;
+  --cell-empty: #1e1730;
+  --cell-empty-hover: #281f3d;
+  --cell-future: #130f1c;
+}
+
+[data-theme='ivory'],
 [data-theme='light'] {
   --surface-0: #fbfbfa;
   --surface-1: #ffffff;
@@ -318,6 +394,24 @@ html {
   background: color-mix(in srgb, var(--surface-1) 72%, transparent);
 }
 
+/* Command Palette (Ctrl/Cmd+K) : fond flouté cohérent avec le thème actif. */
+.palette-glass {
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+@keyframes palette-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Header translucide collant : l'aurore glisse dessous au scroll. */
 .header-glass {
   position: sticky;
@@ -368,6 +462,89 @@ html {
   }
 }
 
+/* Apparition du Tooltip universel. */
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide-down du menu hamburger mobile. */
+@keyframes mobile-menu-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Zone de tap confortable (44px, recommandation mobile) sur les boutons
+   principaux — n'affecte que les petits écrans pour ne pas gonfler les
+   contrôles compacts du desktop (sélecteurs d'emoji, cellules de grille…). */
+@media (max-width: 767px) {
+  .tap-target {
+    min-height: 44px;
+  }
+}
+
+/* Chute des lettres du titre sur la landing (stagger 30ms/lettre en JS). */
+@keyframes letter-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Indicateur de scroll qui pulse en bas du hero. */
+@keyframes scroll-cue-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scaleY(0.6);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+/* Highlight pulsant des coach marks de première visite. */
+@keyframes coachmark-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 15%, transparent);
+  }
+}
+
+/* Confetti léger quand la barre de progression du jour atteint 100%. */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(16px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
 /* Pulsation douce pour les squelettes de chargement (Skeleton.jsx). */
 @keyframes skeleton-pulse {
   0%,
@@ -380,6 +557,18 @@ html {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Coupe-circuit global : neutralise toutes les animations/transitions de
+     l'app (celles listées ci-dessus et toute future addition) plutôt que de
+     maintenir une liste d'exceptions au fil des ajouts. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
   .anim-fade-up {
     animation: none;
   }

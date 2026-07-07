@@ -1,0 +1,53 @@
+/* Système typographique Momentum — hiérarchie cohérente à appliquer partout
+   plutôt que des combinaisons ad-hoc de text-white/font-bold/text-2xl.
+   Note : utilise les tokens --surface-N, --text-N, --accent déjà définis
+   dans index.css (système de thème existant) plutôt que d'introduire un
+   second jeu de variables préfixées m, pour éviter deux sources de vérité. */
+
+.text-display {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 48px);
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+}
+
+.text-heading {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+
+.text-section {
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-strong);
+}
+
+.text-label {
+  font-family: 'Syne', sans-serif;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.text-body {
+  font-family: 'Syne', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.text-data {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}

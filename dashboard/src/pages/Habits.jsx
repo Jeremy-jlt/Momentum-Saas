@@ -28,6 +28,11 @@ import { enqueueOfflineAction } from '../utils/offlineQueue'
 import { useToast } from '../components/Toast'
 import { useIsPro } from '../hooks/useIsPro'
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton'
+import { getCached, setCached } from '../utils/dataCache'
+import EmptyState, { HabitsIllustration } from '../components/EmptyState'
+import CoachMark from '../components/CoachMark'
+import { playCheckSound, useDisplayPrefs } from '../hooks/useDisplayPrefs'
+import ShareButton from '../components/ShareButton'
 
 const STREAK_THRESHOLD = 0.8
 const MAX_STREAK_LOOKBACK_DAYS = 3650
@@ -36,6 +41,7 @@ const CHART_TYPE_STORAGE_KEY = 'momentum_chart_type'
 const LAYOUT_STORAGE_KEY = 'momentum_habit_layout'
 const WIDGETS_STORAGE_KEY = 'momentum_widgets'
 const WIDGETS_ORDER_STORAGE_KEY = 'momentum_widgets_order'
+const SHORTCUTS_HINT_STORAGE_KEY = 'momentum_shortcuts_hint_seen'
 const DAY_ABBREVIATIONS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa']
 
 // Widgets réorganisables de la page (layout Focus uniquement — Dashboard,
@@ -340,6 +346,7 @@ function ChartTypeButton({ type, icon, label, active, locked, onSelect }) {
       <button
         onClick={handleClick}
         disabled={locked}
+        aria-label={locked ? `${label} (Pro)` : label}
         className={`w-7 h-7 rounded-md flex items-center justify-center text-xs border transition-[background-color,border-color] duration-[120ms] ${transformClass} ${
           locked
             ? 'bg-[var(--surface-1)] border-[var(--border)] text-[var(--text-subtle)] cursor-not-allowed'
@@ -428,13 +435,16 @@ export default function Habits() {
 
   const isPro = useIsPro()
 
-  const [habitudes, setHabitudes] = useState([])
-  const [completions, setCompletions] = useState([])
-  const [sentiments, setSentiments] = useState([])
-  const [projets, setProjets] = useState([])
-  const [sessionsTravail, setSessionsTravail] = useState([])
+  const cacheKey = `habits:${user.id}`
+  const cached = getCached(cacheKey)
+
+  const [habitudes, setHabitudes] = useState(() => cached?.habitudes ?? [])
+  const [completions, setCompletions] = useState(() => cached?.completions ?? [])
+  const [sentiments, setSentiments] = useState(() => cached?.sentiments ?? [])
+  const [projets, setProjets] = useState(() => cached?.projets ?? [])
+  const [sessionsTravail, setSessionsTravail] = useState(() => cached?.sessionsTravail ?? [])
   const [openProjectPopoverId, setOpenProjectPopoverId] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => cached === undefined)
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
   const [chartType, setChartType] = useState(
@@ -454,6 +464,11 @@ export default function Habits() {
   const [showExportModal, setShowExportModal] = useState(false)
   const [showCustomizePanel, setShowCustomizePanel] = useState(false)
   const [openMoodDate, setOpenMoodDate] = useState(null)
+  const gridCoachRef = useRef(null)
+  const chartSelectorCoachRef = useRef(null)
+  const customizeCoachRef = useRef(null)
+  const [coachStage, setCoachStage] = useState(0)
+  const [displayPrefs, setDisplayPref] = useDisplayPrefs()
   const [widgets, setWidgets] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(WIDGETS_STORAGE_KEY))
@@ -506,7 +521,10 @@ export default function Habits() {
     let cancelled = false
 
     async function load() {
-      setLoading(true)
+      // Pas de flash de l'écran de chargement si on a déjà des données en
+      // cache pour cet utilisateur (revisite de la page) : on les affiche
+      // tout de suite et on revalide silencieusement en arrière-plan.
+      if (getCached(cacheKey) === undefined) setLoading(true)
       const [habitudesRes, completionsRes, sentimentsRes, projetsRes, sessionsRes] = await Promise.all([
         supabase
           .from('habitudes')
@@ -525,11 +543,19 @@ export default function Habits() {
 
       if (cancelled) return
 
-      setHabitudes(habitudesRes.data ?? [])
-      setCompletions(completionsRes.data ?? [])
-      setSentiments(sentimentsRes.data ?? [])
-      setProjets(projetsRes.data ?? [])
-      setSessionsTravail(sessionsRes.data ?? [])
+      const next = {
+        habitudes: habitudesRes.data ?? [],
+        completions: completionsRes.data ?? [],
+        sentiments: sentimentsRes.data ?? [],
+        projets: projetsRes.data ?? [],
+        sessionsTravail: sessionsRes.data ?? [],
+      }
+      setHabitudes(next.habitudes)
+      setCompletions(next.completions)
+      setSentiments(next.sentiments)
+      setProjets(next.projets)
+      setSessionsTravail(next.sessionsTravail)
+      setCached(cacheKey, next)
       setLoading(false)
     }
 
@@ -537,6 +563,7 @@ export default function Habits() {
     return () => {
       cancelled = true
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   // Les anneaux hebdomadaires ne jouent leur animation de remplissage en
@@ -879,6 +906,8 @@ export default function Habits() {
   const toggleCompletion = async (habitudeId, dateISO, isChecked) => {
     const cellKey = `${habitudeId}|${dateISO}`
 
+    if (!isChecked && displayPrefs.checkSound) playCheckSound()
+
     if (isChecked) {
       setCompletions((prev) => prev.filter((c) => !(c.habitude_id === habitudeId && c.date === dateISO)))
 
@@ -928,6 +957,47 @@ export default function Habits() {
       }
     }
   }
+
+  const [showShortcutsHint, setShowShortcutsHint] = useState(false)
+
+  useEffect(() => {
+    if (localStorage.getItem(SHORTCUTS_HINT_STORAGE_KEY)) return
+    setShowShortcutsHint(true)
+    localStorage.setItem(SHORTCUTS_HINT_STORAGE_KEY, '1')
+    const t = setTimeout(() => setShowShortcutsHint(false), 5000)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Raccourcis clavier bureau : T/U cochent/décochent en masse les
+  // habitudes du jour, ←→ navigue entre les mois. Désactivés quand le focus
+  // est dans un champ de saisie pour ne pas interférer avec la frappe.
+  useEffect(() => {
+    const handler = (e) => {
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      if (e.key === 'ArrowLeft') {
+        goToPrevMonth()
+      } else if (e.key === 'ArrowRight') {
+        goToNextMonth()
+      } else if (e.key.toLowerCase() === 't') {
+        const uncheckedToday = habitudes.filter((h) => !completionsSet.has(`${h.id}|${todayISO}`))
+        if (uncheckedToday.length === 0) return
+        uncheckedToday.forEach((h) => toggleCompletion(h.id, todayISO, false))
+        showToast('Toutes les habitudes du jour cochées ✓', 'success')
+      } else if (e.key.toLowerCase() === 'u') {
+        const checkedToday = habitudes.filter((h) => completionsSet.has(`${h.id}|${todayISO}`))
+        if (checkedToday.length === 0) return
+        checkedToday.forEach((h) => toggleCompletion(h.id, todayISO, true))
+        showToast('Toutes les habitudes du jour décochées', 'success')
+      }
+    }
+
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habitudes, completionsSet, todayISO])
 
   const saveMood = async (dateISO, score) => {
     const previous = sentiments.find((s) => s.date === dateISO)?.score ?? null
@@ -1055,17 +1125,14 @@ export default function Habits() {
 
   if (habitudes.length === 0) {
     return (
-      <div className="max-w-xl mx-auto px-6 py-24 text-center">
-        <h1 className="text-2xl font-bold mb-2">Aucune habitude pour le moment</h1>
-        <p className="text-[var(--text-faint)] mb-8">
-          Choisis un point de départ pour commencer à suivre tes habitudes.
-        </p>
-        <Link
-          to="/habits/templates"
-          className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-black font-bold rounded-md px-6 py-3 text-sm"
-        >
-          Choisir un template
-        </Link>
+      <div className="max-w-xl mx-auto px-6">
+        <EmptyState
+          illustration={<HabitsIllustration />}
+          title="Ta première série t'attend"
+          description="Choisis un point de départ pour commencer à suivre tes habitudes."
+          ctaLabel="Choisir un template"
+          ctaTo="/habits/templates"
+        />
       </div>
     )
   }
@@ -1105,9 +1172,18 @@ export default function Habits() {
   const renderStatCards = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <div
-        className="card-glass border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
+        className={`relative card-glass border rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out] ${
+          monthStats.rate >= 100 ? 'border-[var(--accent)]' : 'border-[var(--border)]'
+        }`}
         style={{ animationDelay: '0ms', animationFillMode: 'backwards' }}
       >
+        {monthStats.rate >= 100 && (
+          <span
+            className="absolute -top-2 -right-2 bg-[var(--accent)] text-[var(--accent-contrast)] text-[9px] font-bold rounded-full px-2 py-1 animate-[pop_300ms_cubic-bezier(0.34,1.56,0.64,1)]"
+          >
+            ✓ Objectif atteint
+          </span>
+        )}
         <p className="kicker mb-2">Ce mois</p>
         <p className="num text-3xl font-bold text-[var(--accent)]">
           <AnimatedNumber value={monthStats.rate} suffix="%" />
@@ -1233,13 +1309,18 @@ export default function Habits() {
   )
 
   const renderGrid = (density = 'normal') => {
-    const compact = density === 'compact'
-    const tableFont = compact ? 'text-[11px]' : 'text-xs'
-    const nameMinW = compact ? 'min-w-[110px]' : 'min-w-[160px]'
-    const colWidth = compact ? 'w-5' : 'w-6'
-    const cellPad = compact ? 'px-0 py-1' : 'px-0.5 py-1.5'
-    const cellSize = compact ? 'w-3.5 h-3.5' : 'w-4 h-4'
-    const cellFont = compact ? 'text-[8px]' : 'text-[9px]'
+    // La densité globale choisie dans "Personnaliser" (Confortable par
+    // défaut) prime sur la densité propre au layout — un utilisateur qui
+    // choisit Ultra-compact veut des grilles serrées partout, pas juste sur
+    // le layout Compact.
+    const ultra = displayPrefs.density === 'ultra-compact'
+    const compact = ultra || displayPrefs.density === 'compact' || density === 'compact'
+    const tableFont = ultra ? 'text-[10px]' : compact ? 'text-[11px]' : 'text-xs'
+    const nameMinW = ultra ? 'min-w-[90px]' : compact ? 'min-w-[110px]' : 'min-w-[160px]'
+    const colWidth = ultra ? 'w-4' : compact ? 'w-5' : 'w-6'
+    const cellPad = ultra ? 'px-0 py-0.5' : compact ? 'px-0 py-1' : 'px-0.5 py-1.5'
+    const cellSize = ultra ? 'w-3 h-3' : compact ? 'w-3.5 h-3.5' : 'w-4 h-4'
+    const cellFont = ultra ? 'text-[7px]' : compact ? 'text-[8px]' : 'text-[9px]'
     const percentFont = compact ? 'text-[10px]' : ''
     const showMoodRow = widgets.mood_row !== false
 
@@ -1248,6 +1329,7 @@ export default function Habits() {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={goToPrevMonth}
+            aria-label="Mois précédent"
             className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md w-8 h-8 flex items-center justify-center text-sm"
           >
             &lt;
@@ -1255,13 +1337,15 @@ export default function Habits() {
           <p className="text-sm font-bold">{formatMonthLabel(viewYear, viewMonth)}</p>
           <button
             onClick={goToNextMonth}
+            aria-label="Mois suivant"
             className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md w-8 h-8 flex items-center justify-center text-sm"
           >
             &gt;
           </button>
         </div>
 
-        <div className="overflow-x-auto mb-12 bg-[var(--surface-0)] border border-[var(--border)] rounded-lg">
+        <div className="relative mb-12" ref={gridCoachRef}>
+        <div className="overflow-x-auto bg-[var(--surface-0)] border border-[var(--border)] rounded-lg">
           <table className={`${tableFont} border-collapse`}>
             <thead>
               <tr>
@@ -1336,14 +1420,35 @@ export default function Habits() {
                 const barWidth = Math.min(100, Math.round((stats.count / objectif) * 100))
 
                 const linkedProjets = projetsByHabitudeId.get(h.id) || []
+                const rowStreak = consecutiveStreakEndingAt(h.id, todayISO)
+                const streakAlpha = rowStreak >= 30 ? 0.15 : rowStreak >= 14 ? 0.1 : rowStreak >= 7 ? 0.06 : 0
 
                 return (
-                  <tr key={h.id} className="hover:bg-[var(--surface-1)]">
+                  <tr
+                    key={h.id}
+                    className="hover:bg-[var(--surface-1)]"
+                    style={
+                      streakAlpha > 0
+                        ? {
+                            background: `linear-gradient(90deg, color-mix(in srgb, var(--accent) ${Math.round(
+                              streakAlpha * 100
+                            )}%, transparent) 0%, transparent 60%)`,
+                          }
+                        : undefined
+                    }
+                  >
                     <td className="sticky left-0 bg-[var(--surface-0)] px-3 py-1.5 border-b border-[var(--border)]">
                       <div className="relative flex items-center gap-2">
                         <span>{h.emoji}</span>
                         <div>
-                          <p className="text-[var(--text-muted)]">{compact ? truncateLabel(h.nom) : h.nom}</p>
+                          <p className="text-[var(--text-muted)]">
+                            {compact ? truncateLabel(h.nom) : h.nom}
+                            {streakAlpha > 0 && (
+                              <span className="ml-1.5 text-[9px] text-[var(--accent)] font-bold whitespace-nowrap">
+                                🔥 {rowStreak}j
+                              </span>
+                            )}
+                          </p>
                           {!compact && h.categorie && (
                             <p className="text-[10px] text-[var(--text-faint)]">{h.categorie}</p>
                           )}
@@ -1408,6 +1513,7 @@ export default function Habits() {
                         state === 'checked' && isPro
                           ? { background: heatmapBackground(h.id, iso) }
                           : undefined
+                      const hideFuture = state === 'future' && !displayPrefs.showFutureDays
                       return (
                         <td
                           key={day}
@@ -1415,15 +1521,20 @@ export default function Habits() {
                             isToday ? 'bg-[var(--surface-1)]' : ''
                           }`}
                         >
-                          <HabitCell
-                            state={state}
-                            onClick={() => toggleCompletion(h.id, iso, checked)}
-                            title={state === 'missed' ? 'Rattraper cette journée ?' : undefined}
-                            size={cellSize}
-                            fontSize={cellFont}
-                            style={heatStyle}
-                            shake={shakingCellKey === `${h.id}|${iso}`}
-                          />
+                          {hideFuture ? (
+                            <span className={`block ${cellSize} mx-auto`} />
+                          ) : (
+                            <HabitCell
+                              state={state}
+                              onClick={() => toggleCompletion(h.id, iso, checked)}
+                              title={state === 'missed' ? 'Rattraper cette journée ?' : undefined}
+                              size={cellSize}
+                              fontSize={cellFont}
+                              style={heatStyle}
+                              shake={shakingCellKey === `${h.id}|${iso}`}
+                              missedColor={displayPrefs.missedColor}
+                            />
+                          )}
                         </td>
                       )
                     })}
@@ -1524,6 +1635,11 @@ export default function Habits() {
               </tr>
             </tfoot>
           </table>
+        </div>
+        <div
+          className="md:hidden pointer-events-none absolute top-0 right-0 bottom-0 w-8 rounded-r-lg"
+          style={{ background: 'linear-gradient(to left, var(--surface-0), transparent)' }}
+        />
         </div>
       </div>
     )
@@ -1731,7 +1847,7 @@ export default function Habits() {
           <p className="text-sm text-[var(--text-muted)]">
             {CHART_TYPE_TITLES[displayedChartType] || 'Progression sur 30 jours'}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" ref={chartSelectorCoachRef}>
             <div className="flex items-center gap-1">
               {CHART_TYPE_GROUPS[0].map(renderChartTypeButton)}
             </div>
@@ -2128,7 +2244,8 @@ export default function Habits() {
           <button
             onClick={goToPrevHabit}
             disabled={idx === 0}
-            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
+            aria-label="Habitude précédente"
+            className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
           >
             ←
           </button>
@@ -2145,7 +2262,8 @@ export default function Habits() {
           <button
             onClick={goToNextHabit}
             disabled={idx === habitudes.length - 1}
-            className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
+            aria-label="Habitude suivante"
+            className="tap-target border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md w-10 h-10 flex items-center justify-center"
           >
             →
           </button>
@@ -2194,6 +2312,7 @@ export default function Habits() {
             })}
           </div>
           <button
+            ref={customizeCoachRef}
             onClick={() => setShowCustomizePanel(true)}
             className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
           >
@@ -2205,6 +2324,13 @@ export default function Habits() {
           >
             Exporter mes données 📥
           </button>
+          <ShareButton
+            title="Ma progression"
+            stats={[
+              { label: 'ce mois', value: `${monthStats.rate}%`, accent: true },
+              { label: '🔥 jours de streak', value: streak },
+            ]}
+          />
           <Link
             to="/habits/manage"
             className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
@@ -2286,9 +2412,93 @@ export default function Habits() {
               })}
             </div>
 
+            <div className="mt-8 pt-6 border-t border-[var(--border)] flex flex-col gap-5">
+              <p className="text-[10px] uppercase tracking-widest text-[var(--text-faint)]">Affichage</p>
+
+              <div>
+                <p className="text-sm text-[var(--text-muted)] mb-2">Densité</p>
+                <div className="inline-flex rounded-md border border-[var(--border)] overflow-hidden w-full">
+                  {[
+                    { id: 'confortable', label: 'Confort' },
+                    { id: 'compact', label: 'Compact' },
+                    { id: 'ultra-compact', label: 'Ultra' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setDisplayPref('density', opt.id)}
+                      className={`flex-1 px-2 py-1.5 text-[11px] transition-colors ${
+                        displayPrefs.density === opt.id
+                          ? 'bg-[var(--accent)] text-[var(--accent-contrast)] font-bold'
+                          : 'text-[var(--text-muted)] hover:bg-[var(--surface-3)]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-[var(--text-muted)] mb-2">Couleur des jours manqués</p>
+                <div className="inline-flex rounded-md border border-[var(--border)] overflow-hidden w-full">
+                  {[
+                    { id: 'rouge', label: 'Rouge' },
+                    { id: 'gris', label: 'Gris' },
+                    { id: 'orange', label: 'Orange' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      onClick={() => setDisplayPref('missedColor', opt.id)}
+                      className={`flex-1 px-2 py-1.5 text-[11px] transition-colors ${
+                        displayPrefs.missedColor === opt.id
+                          ? 'bg-[var(--accent)] text-[var(--accent-contrast)] font-bold'
+                          : 'text-[var(--text-muted)] hover:bg-[var(--surface-3)]'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-[var(--text-muted)]">Afficher les jours futurs</span>
+                <button
+                  type="button"
+                  onClick={() => setDisplayPref('showFutureDays', !displayPrefs.showFutureDays)}
+                  className={`w-9 h-5 rounded-full relative transition-colors shrink-0 ${
+                    displayPrefs.showFutureDays ? 'bg-[var(--accent)]' : 'bg-[var(--surface-3)]'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
+                      displayPrefs.showFutureDays ? 'left-4' : 'left-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-[var(--text-muted)]">Son de la coche</span>
+                <button
+                  type="button"
+                  onClick={() => setDisplayPref('checkSound', !displayPrefs.checkSound)}
+                  className={`w-9 h-5 rounded-full relative transition-colors shrink-0 ${
+                    displayPrefs.checkSound ? 'bg-[var(--accent)]' : 'bg-[var(--surface-3)]'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${
+                      displayPrefs.checkSound ? 'left-4' : 'left-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={resetWidgets}
-              className="mt-8 w-full border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+              className="mt-6 w-full border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
             >
               Tout réafficher
             </button>
@@ -2306,6 +2516,39 @@ export default function Habits() {
               : renderFocusLayout()}
       </div>
       </div>
+
+      {coachStage === 0 && (
+        <CoachMark
+          id="habits-grid"
+          targetRef={gridCoachRef}
+          message="Clique sur une cellule pour cocher ton habitude du jour."
+          onDismiss={() => setCoachStage(1)}
+        />
+      )}
+      {coachStage === 1 && (
+        <CoachMark
+          id="chart-selector"
+          targetRef={chartSelectorCoachRef}
+          message="Change la visualisation de tes statistiques ici."
+          onDismiss={() => setCoachStage(2)}
+        />
+      )}
+      {coachStage === 2 && (
+        <CoachMark
+          id="customize-panel"
+          targetRef={customizeCoachRef}
+          message="Personnalise ton dashboard : widgets, disposition, densité..."
+          onDismiss={() => setCoachStage(3)}
+        />
+      )}
+
+      {showShortcutsHint && (
+        <div className="hidden md:block fixed bottom-6 right-6 z-[90] bg-[var(--surface-1)] border-[0.5px] border-[var(--border)] text-[var(--text-muted)] text-[11px] rounded-md px-3 py-2 animate-[tooltip-in_150ms_ease-out]">
+          Raccourcis : <span className="text-[var(--text-strong)] font-bold">T</span> ·{' '}
+          <span className="text-[var(--text-strong)] font-bold">U</span> ·{' '}
+          <span className="text-[var(--text-strong)] font-bold">←→</span>
+        </div>
+      )}
     </>
   )
 }

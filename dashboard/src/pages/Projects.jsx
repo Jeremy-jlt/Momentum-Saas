@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 import Modal from '../components/Modal'
@@ -9,18 +9,33 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { formatDurationMinutes, formatRelativeDate } from '../utils/dateUtils'
 import { useToast } from '../components/Toast'
 import { SkeletonCard } from '../components/Skeleton'
+import { getCached, setCached } from '../utils/dataCache'
+import EmptyState, { ProjectsIllustration } from '../components/EmptyState'
 
 export default function Projects() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const isOnline = useOnlineStatus()
   const showToast = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [projets, setProjets] = useState([])
-  const [sessions, setSessions] = useState([])
-  const [habitudes, setHabitudes] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
+  const cacheKey = `projects:${user.id}`
+  const cached = getCached(cacheKey)
+
+  const [projets, setProjets] = useState(() => cached?.projets ?? [])
+  const [sessions, setSessions] = useState(() => cached?.sessions ?? [])
+  const [habitudes, setHabitudes] = useState(() => cached?.habitudes ?? [])
+  const [loading, setLoading] = useState(() => cached === undefined)
+  const [showCreateModal, setShowCreateModal] = useState(() => searchParams.get('create') === '1')
+
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      setShowCreateModal(true)
+      searchParams.delete('create')
+      setSearchParams(searchParams, { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (user) load()
@@ -28,7 +43,7 @@ export default function Projects() {
   }, [user])
 
   async function load() {
-    setLoading(true)
+    if (getCached(cacheKey) === undefined) setLoading(true)
     const [projetsRes, sessionsRes, habitudesRes] = await Promise.all([
       supabase
         .from('projets')
@@ -43,9 +58,15 @@ export default function Projects() {
       supabase.from('habitudes').select('id, nom, emoji').eq('user_id', user.id).eq('actif', true),
     ])
 
-    setProjets(projetsRes.data ?? [])
-    setSessions(sessionsRes.data ?? [])
-    setHabitudes(habitudesRes.data ?? [])
+    const next = {
+      projets: projetsRes.data ?? [],
+      sessions: sessionsRes.data ?? [],
+      habitudes: habitudesRes.data ?? [],
+    }
+    setProjets(next.projets)
+    setSessions(next.sessions)
+    setHabitudes(next.habitudes)
+    setCached(cacheKey, next)
     setLoading(false)
   }
 
@@ -115,18 +136,13 @@ export default function Projects() {
       )}
 
       {projets.length === 0 ? (
-        <div className="text-center py-24">
-          <p className="text-[var(--text-faint)] mb-6">
-            Aucun projet pour le moment. Lie tes sessions de travail à un projet
-            pour suivre ton temps.
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] transition-colors text-[var(--accent-contrast)] font-bold rounded-md px-6 py-3 text-sm"
-          >
-            Créer mon premier projet
-          </button>
-        </div>
+        <EmptyState
+          illustration={<ProjectsIllustration />}
+          title="Ton premier projet t'attend"
+          description="Lie tes sessions de travail à un projet pour suivre ton temps et faire avancer tes habitudes automatiquement."
+          ctaLabel="Créer mon premier projet"
+          onCta={() => setShowCreateModal(true)}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {projets.map((p, i) => {

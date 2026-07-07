@@ -36,11 +36,14 @@ export async function flushOfflineQueue(supabase) {
           console.error('[Momentum] Échec de synchronisation (insert) :', error)
         }
       } else if (item.action === 'delete') {
-        await supabase
+        const { error } = await supabase
           .from('completions')
           .delete()
           .eq('habitude_id', item.data.habitude_id)
           .eq('date', item.data.date)
+        if (error) {
+          console.error('[Momentum] Échec de synchronisation (delete) :', error)
+        }
       }
     } catch (err) {
       console.error('[Momentum] Échec de synchronisation :', err)

@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
+import { useToast } from '../components/Toast'
 
 const POLL_INTERVAL_MS = 3000
+const POLL_FAILURE_THRESHOLD = 3
 
 export default function Verification() {
   const { user } = useAuth()
@@ -19,6 +21,8 @@ export default function Verification() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const pollRef = useRef(null)
+  const pollFailuresRef = useRef(0)
+  const showToast = useToast()
 
   // Prépare (ou réutilise) le token de vérification et l'affiche via QR code
   useEffect(() => {
@@ -98,12 +102,23 @@ export default function Verification() {
     }
 
     pollRef.current = setInterval(async () => {
-      const { data } = await supabase
+      const { data, error: pollError } = await supabase
         .from('engagements')
         .select('verification_statut, verification_resultat')
         .eq('id', engagementId)
         .single()
 
+      if (pollError) {
+        pollFailuresRef.current += 1
+        // Ne pas alerter sur un simple blip réseau isolé — seulement si
+        // l'échec persiste sur plusieurs cycles de sondage consécutifs.
+        if (pollFailuresRef.current === POLL_FAILURE_THRESHOLD) {
+          showToast('La vérification du statut rencontre des difficultés réseau.', 'error')
+        }
+        return
+      }
+
+      pollFailuresRef.current = 0
       if (data) {
         setStatut(data.verification_statut)
         setResultat(data.verification_resultat)
@@ -111,6 +126,7 @@ export default function Verification() {
     }, POLL_INTERVAL_MS)
 
     return () => clearInterval(pollRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engagementId, statut])
 
   if (loading) {
