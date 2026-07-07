@@ -27,6 +27,7 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { enqueueOfflineAction } from '../utils/offlineQueue'
 import { useToast } from '../components/Toast'
 import { useIsPro } from '../hooks/useIsPro'
+import { SkeletonBlock, SkeletonCard } from '../components/Skeleton'
 
 const STREAK_THRESHOLD = 0.8
 const MAX_STREAK_LOOKBACK_DAYS = 3650
@@ -1040,8 +1041,14 @@ export default function Habits() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
-        Chargement...
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <SkeletonBlock className="h-64 w-full mb-6" />
+        <SkeletonBlock className="h-40 w-full" />
       </div>
     )
   }

@@ -1,23 +1,29 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
+import RouteLoader from './components/RouteLoader'
 import Home from './pages/Home'
 import Login from './pages/Login'
-import NewCommitment from './pages/NewCommitment'
-import Engagements from './pages/Engagements'
-import HowItWorks from './pages/HowItWorks'
-import Verification from './pages/Verification'
-import MobileVerify from './pages/MobileVerify'
-import Habits from './pages/Habits'
-import HabitTemplates from './pages/HabitTemplates'
-import HabitManager from './pages/HabitManager'
-import Projects from './pages/Projects'
-import ProjectDetail from './pages/ProjectDetail'
-import Profile from './pages/Profile'
-import Pricing from './pages/Pricing'
+
+// Chargées à la demande : ces pages ne sont pas nécessaires au premier
+// affichage (landing / login), ce qui allège le bundle initial.
+const NewCommitment = lazy(() => import('./pages/NewCommitment'))
+const Engagements = lazy(() => import('./pages/Engagements'))
+const HowItWorks = lazy(() => import('./pages/HowItWorks'))
+const Verification = lazy(() => import('./pages/Verification'))
+const MobileVerify = lazy(() => import('./pages/MobileVerify'))
+const Habits = lazy(() => import('./pages/Habits'))
+const HabitTemplates = lazy(() => import('./pages/HabitTemplates'))
+const HabitManager = lazy(() => import('./pages/HabitManager'))
+const Projects = lazy(() => import('./pages/Projects'))
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Pricing = lazy(() => import('./pages/Pricing'))
 
 export default function App() {
   return (
+    <Suspense fallback={<RouteLoader />}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/mobile-verify" element={<MobileVerify />} />
@@ -100,5 +106,6 @@ export default function App() {
         />
       </Route>
     </Routes>
+    </Suspense>
   )
 }

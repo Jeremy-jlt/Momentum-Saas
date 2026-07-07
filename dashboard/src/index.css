@@ -341,6 +341,44 @@ html {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
+/* Transition de page au changement de route — Layout.jsx remonte <Outlet/>
+   via key={pathname}, ce qui rejoue ce fondu à chaque navigation. */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Barre de progression indéterminée en haut de l'écran pendant le
+   chargement d'une page en lazy-loading (RouteLoader). */
+@keyframes route-loader {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+/* Pulsation douce pour les squelettes de chargement (Skeleton.jsx). */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .anim-fade-up {
     animation: none;

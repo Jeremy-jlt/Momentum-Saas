@@ -14,6 +14,7 @@ import { supabase } from '../supabaseClient'
 import Modal from '../components/Modal'
 import ProjectForm from '../components/ProjectForm'
 import { useToast } from '../components/Toast'
+import { SkeletonBlock } from '../components/Skeleton'
 import { formatDurationMinutes, parseISODate, toISODate } from '../utils/dateUtils'
 
 const SESSIONS_PAGE_SIZE = 20
@@ -124,8 +125,14 @@ export default function ProjectDetail() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
-        Chargement...
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <div className="flex items-center gap-3 mb-8">
+          <SkeletonBlock className="w-4 h-4 rounded-full" />
+          <SkeletonBlock className="h-8 w-1/3" />
+        </div>
+        <SkeletonBlock className="h-56 w-full mb-10" />
+        <SkeletonBlock className="h-24 w-full mb-3" />
+        <SkeletonBlock className="h-24 w-full" />
       </div>
     )
   }

@@ -21,6 +21,7 @@ import Modal from '../components/Modal'
 import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { useToast } from '../components/Toast'
+import { SkeletonBlock } from '../components/Skeleton'
 import { useIsPro } from '../hooks/useIsPro'
 
 const DEFAULT_OBJECTIF_JOURS = 30
@@ -121,6 +122,7 @@ export default function HabitManager() {
   const [openPickerId, setOpenPickerId] = useState(null)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false)
+  const [deleteTargetId, setDeleteTargetId] = useState(null)
 
   const [newNom, setNewNom] = useState('')
   const [newEmoji, setNewEmoji] = useState('🎯')
@@ -211,11 +213,7 @@ export default function HabitManager() {
   }
 
   const handleDelete = async (id) => {
-    const confirmed = window.confirm(
-      "Es-tu sûr ? Cette action supprimera aussi toutes tes coches pour cette habitude."
-    )
-    if (!confirmed) return
-
+    setDeleteTargetId(null)
     setHabitudes((prev) => prev.filter((h) => h.id !== id))
     const { error: deleteError } = await supabase.from('habitudes').delete().eq('id', id)
 
@@ -289,8 +287,12 @@ export default function HabitManager() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
-        Chargement...
+      <div className="max-w-3xl mx-auto px-6 py-12 flex flex-col gap-2">
+        <SkeletonBlock className="h-12 w-full" />
+        <SkeletonBlock className="h-12 w-full" />
+        <SkeletonBlock className="h-12 w-full" />
+        <SkeletonBlock className="h-12 w-full" />
+        <SkeletonBlock className="h-12 w-full" />
       </div>
     )
   }
@@ -363,6 +365,30 @@ export default function HabitManager() {
               className="bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
             >
               Tout supprimer
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {deleteTargetId && (
+        <Modal onClose={() => setDeleteTargetId(null)}>
+          <h3 className="font-bold text-lg mb-2">Supprimer cette habitude ?</h3>
+          <p className="text-sm text-[var(--text-muted)] mb-6">
+            Cette action supprimera aussi toutes tes coches pour cette habitude.
+            Cette action est irréversible.
+          </p>
+          <div className="flex items-center gap-3 justify-end">
+            <button
+              onClick={() => setDeleteTargetId(null)}
+              className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm"
+            >
+              Annuler
+            </button>
+            <button
+              onClick={() => handleDelete(deleteTargetId)}
+              className="bg-[var(--danger)] hover:bg-[var(--danger-strong)] transition-colors text-white font-bold rounded-md px-4 py-2 text-sm"
+            >
+              Supprimer
             </button>
           </div>
         </Modal>
@@ -474,7 +500,7 @@ export default function HabitManager() {
                 </label>
 
                 <button
-                  onClick={() => handleDelete(h.id)}
+                  onClick={() => setDeleteTargetId(h.id)}
                   className="text-xs border border-[var(--border)] text-[var(--text-faint)] hover:border-[var(--danger)] hover:text-[var(--danger)] transition-colors rounded-md px-2 py-1.5 shrink-0"
                 >
                   Supprimer

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
+import { SkeletonBlock } from '../components/Skeleton'
 
 const STATUS_STYLES = {
   en_cours: { label: 'En cours', dot: 'bg-[var(--text-subtle)]' },
@@ -46,8 +47,10 @@ export default function Engagements() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
-        Chargement...
+      <div className="max-w-3xl mx-auto px-6 py-12 flex flex-col gap-3">
+        <SkeletonBlock className="h-20 w-full" />
+        <SkeletonBlock className="h-20 w-full" />
+        <SkeletonBlock className="h-20 w-full" />
       </div>
     )
   }

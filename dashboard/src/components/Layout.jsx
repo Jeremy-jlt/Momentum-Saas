@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import Onboarding from './Onboarding'
@@ -9,6 +9,7 @@ export default function Layout() {
   const { user, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  const location = useLocation()
   const [showUserMenu, setShowUserMenu] = useState(false)
 
   const handleSignOut = async () => {
@@ -148,7 +149,9 @@ export default function Layout() {
       </header>
 
       <main className="relative z-10 flex-1">
-        <Outlet />
+        <div key={location.pathname} className="animate-[page-fade-in_220ms_ease-out]">
+          <Outlet />
+        </div>
       </main>
 
       <footer className="relative z-10 border-t border-[var(--border)]">

@@ -8,6 +8,7 @@ import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { formatDurationMinutes, formatRelativeDate } from '../utils/dateUtils'
 import { useToast } from '../components/Toast'
+import { SkeletonCard } from '../components/Skeleton'
 
 export default function Projects() {
   const { user } = useAuth()
@@ -77,8 +78,12 @@ export default function Projects() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-6 py-24 text-center text-[var(--text-faint)]">
-        Chargement...
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </div>
     )
   }
