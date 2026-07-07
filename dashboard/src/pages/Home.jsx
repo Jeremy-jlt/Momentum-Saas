@@ -35,8 +35,10 @@ export default function Home() {
     return (
       <div className="min-h-[calc(100dvh-6rem)] flex items-center">
         <div className="w-full max-w-3xl mx-auto px-6 py-24 text-center">
+          <p className="anim-fade-up kicker mb-4" style={{ color: 'var(--accent)' }}>Reprends le contrôle</p>
           <h1
-            className="anim-fade-up text-6xl md:text-7xl font-bold tracking-tight mb-4 text-[var(--text-strong)]"
+            className="anim-fade-up text-6xl md:text-7xl font-extrabold tracking-tight mb-4 text-[var(--text-strong)]"
+            style={{ '--d': '80ms' }}
           >
             Momentum
           </h1>
@@ -77,7 +79,11 @@ export default function Home() {
   return (
     <div className="min-h-[calc(100dvh-6rem)] flex items-center">
       <div className="w-full max-w-3xl mx-auto px-6 py-24 text-center">
-      <h1 className="anim-fade-up text-5xl md:text-6xl font-bold tracking-tight mb-4 text-[var(--text-strong)]">
+      <p className="anim-fade-up kicker mb-4" style={{ color: 'var(--accent)' }}>Reprends le contrôle</p>
+      <h1
+        className="anim-fade-up text-5xl md:text-6xl font-extrabold tracking-tight mb-4 text-[var(--text-strong)]"
+        style={{ '--d': '80ms' }}
+      >
         Momentum
       </h1>
       <p className="anim-fade-up text-lg text-[var(--text-muted)] mb-6 text-balance" style={{ '--d': '100ms' }}>

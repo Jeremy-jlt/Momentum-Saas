@@ -175,7 +175,7 @@ export default function ProjectDetail() {
         </span>
       )}
 
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--text-faint)] mb-10">
+      <div className="num flex flex-wrap gap-x-6 gap-y-1 text-sm text-[var(--text-faint)] mb-10">
         <span>
           {sessions.length} session{sessions.length > 1 ? 's' : ''}
         </span>
@@ -224,7 +224,7 @@ export default function ProjectDetail() {
         </Modal>
       )}
 
-      <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-4 mb-10">
+      <div className="card-glass border border-[var(--border)] rounded-lg p-4 mb-10">
         <p className="text-sm text-[var(--text-muted)] mb-4">Activité sur 30 jours</p>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
@@ -256,7 +256,7 @@ export default function ProjectDetail() {
         <>
           <div className="flex flex-col gap-3">
             {sessions.slice(0, visibleCount).map((s) => (
-              <div key={s.id} className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-4">
+              <div key={s.id} className="card-glass border border-[var(--border)] rounded-lg p-4">
                 <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
                   <span className="text-xs text-[var(--text-faint)]">
                     {formatSessionDateTime(s.date, s.heure_debut, s.heure_fin)}

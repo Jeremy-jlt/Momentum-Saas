@@ -32,14 +32,14 @@ export default function Pricing() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Gratuit */}
-        <div className="anim-fade-up card-hover bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-8 flex flex-col">
+        <div className="anim-fade-up card-hover card-glass border border-[var(--border)] rounded-lg p-8 flex flex-col">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-xl font-bold">Pour commencer</h2>
-            <span className="text-xs border border-[var(--border)] text-[var(--text-muted)] rounded-full px-3 py-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] border border-[var(--border)] text-[var(--text-muted)] rounded-[4px] px-2 py-1">
               Gratuit
             </span>
           </div>
-          <p className="text-3xl font-bold mb-6">
+          <p className="num text-3xl font-bold mb-6">
             0€<span className="text-sm text-[var(--text-faint)] font-normal">/mois</span>
           </p>
 
@@ -62,16 +62,16 @@ export default function Pricing() {
 
         {/* Discipline+ */}
         <div
-          className="anim-fade-up card-hover bg-[var(--surface-2)] border border-[var(--accent)]/40 rounded-lg p-8 flex flex-col relative"
+          className="anim-fade-up card-hover card-glass border border-[var(--accent)]/40 rounded-lg p-8 flex flex-col relative"
           style={{ '--d': '100ms' }}
         >
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-xl font-bold">Pour aller plus loin</h2>
-            <span className="text-xs bg-[var(--accent)] text-[var(--accent-contrast)] font-bold rounded-full px-3 py-1">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] bg-[var(--accent)] text-[var(--accent-contrast)] rounded-[4px] px-2 py-1">
               Pro
             </span>
           </div>
-          <p className="text-3xl font-bold mb-1">
+          <p className="num text-3xl font-bold mb-1">
             4,99€<span className="text-sm text-[var(--text-faint)] font-normal">/mois</span>
           </p>
           <p className="text-xs text-[var(--text-faint)] mb-1">ou 39€/an — soit 3,25€/mois</p>

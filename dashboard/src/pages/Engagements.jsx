@@ -80,7 +80,7 @@ export default function Engagements() {
             <div
               key={eng.id}
               style={{ '--d': `${i * 60}ms` }}
-              className="anim-fade-up bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-5 flex flex-col gap-3"
+              className="anim-fade-up card-glass border border-[var(--border)] rounded-lg p-5 flex flex-col gap-3"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -108,7 +108,7 @@ export default function Engagements() {
                 </div>
               </div>
 
-              <div className="text-sm text-[var(--text-faint)] flex flex-wrap gap-x-6 gap-y-1">
+              <div className="num text-sm text-[var(--text-faint)] flex flex-wrap gap-x-6 gap-y-1">
                 <span>{eng.duree_jours} jours</span>
                 <span>{eng.mise_euros} €</span>
                 <span>

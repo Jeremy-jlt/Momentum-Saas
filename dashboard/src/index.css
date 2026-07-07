@@ -288,6 +288,46 @@ html {
   background: radial-gradient(circle, rgba(16, 185, 129, 0.12), transparent 62%);
 }
 
+/* ——— Design v2 ——— */
+
+/* Kicker : micro-label majuscule espacé au-dessus des titres et des stats. */
+.kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* Chiffres : monospace à chasse fixe pour un alignement parfait des données. */
+.num {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Carte translucide : l'aurore transparaît légèrement à travers le contenu.
+   Réservé aux cartes posées dans le flux — jamais aux popovers/modales ni à
+   la grille du tracker (lisibilité prioritaire). */
+.card-glass {
+  background: color-mix(in srgb, var(--surface-2) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme='light'] .card-glass {
+  background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+}
+
+/* Header translucide collant : l'aurore glisse dessous au scroll. */
+.header-glass {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--surface-0) 72%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 /* Survol de carte : légère élévation + ombre ultra-diffuse. */
 .card-hover {
   transition:

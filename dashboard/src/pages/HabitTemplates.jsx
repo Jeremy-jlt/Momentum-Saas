@@ -103,16 +103,16 @@ export default function HabitTemplates() {
             <div
               key={template.id}
               style={{ '--d': `${i * 60}ms` }}
-              className="anim-fade-up card-hover relative bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 flex flex-col"
+              className="anim-fade-up card-hover card-glass relative border border-[var(--border)] rounded-lg p-5 flex flex-col"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-3xl">{template.emoji}</span>
                 {isProTemplate ? (
-                  <span className="text-xs border border-[var(--border)] text-[var(--text-muted)] rounded-full px-2 py-1">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] border border-[var(--border)] text-[var(--text-muted)] rounded-[4px] px-2 py-1">
                     Pro 🔒
                   </span>
                 ) : (
-                  <span className="text-xs bg-[var(--accent)] text-[var(--accent-contrast)] font-bold rounded-full px-2 py-1">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.14em] bg-[var(--accent)] text-[var(--accent-contrast)] rounded-[4px] px-2 py-1">
                     Gratuit
                   </span>
                 )}

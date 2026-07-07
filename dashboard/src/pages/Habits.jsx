@@ -410,7 +410,7 @@ function AnimatedProgressBar({ target }) {
   }, [target])
 
   return (
-    <div className="w-full h-1.5 bg-[var(--surface-3)] rounded-full overflow-hidden">
+    <div className="w-full h-[3px] bg-[var(--surface-3)] rounded-full overflow-hidden">
       <div
         className="h-full bg-[var(--accent)] rounded-full transition-[width] duration-[600ms] ease-out"
         style={{ width: `${width}%` }}
@@ -1069,7 +1069,7 @@ export default function Habits() {
   const renderWidget = (id, content, { proOnly = false, lockedTitle = '', lockedDescription = '' } = {}) => {
     if (proOnly && !isPro) {
       return (
-        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-8 text-center mb-10">
+        <div className="card-glass border border-[var(--border)] rounded-lg p-8 text-center mb-10">
           <p className="text-2xl mb-2">🔒</p>
           <p className="font-bold mb-1">{lockedTitle}</p>
           <p className="text-sm text-[var(--text-faint)]">{lockedDescription}</p>
@@ -1098,37 +1098,39 @@ export default function Habits() {
   const renderStatCards = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       <div
-        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
+        className="card-glass border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
         style={{ animationDelay: '0ms', animationFillMode: 'backwards' }}
       >
-        <p className="text-3xl font-bold text-[var(--accent)] mb-1">
+        <p className="kicker mb-2">Ce mois</p>
+        <p className="num text-3xl font-bold text-[var(--accent)]">
           <AnimatedNumber value={monthStats.rate} suffix="%" />
         </p>
-        <p className="text-xs text-[var(--text-faint)]">ce mois</p>
       </div>
 
       <div
-        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
+        className="card-glass border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
         style={{ animationDelay: '80ms', animationFillMode: 'backwards' }}
       >
+        <p className="kicker mb-2">🔥 Série en cours</p>
         <p
-          className={`text-3xl font-bold mb-1 inline-block ${
+          className={`num text-3xl font-bold inline-block ${
             streak > 0 ? 'animate-[pulse-subtle_2s_ease-in-out_infinite]' : ''
           }`}
         >
           <AnimatedNumber value={streak} />
+          <span className="text-sm text-[var(--text-faint)]"> j</span>
         </p>
-        <p className="text-xs text-[var(--text-faint)]">🔥 jours consécutifs</p>
       </div>
 
       <div
-        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
+        className="card-glass border border-[var(--border)] rounded-lg p-5 transition-transform duration-200 hover:-translate-y-0.5 animate-[slide-up_300ms_ease-out]"
         style={{ animationDelay: '160ms', animationFillMode: 'backwards' }}
       >
-        <p className="text-3xl font-bold mb-1">
-          <AnimatedNumber value={todayCompletedCount} />/{totalHabitudes}
+        <p className="kicker mb-2">Aujourd'hui</p>
+        <p className="num text-3xl font-bold mb-3">
+          <AnimatedNumber value={todayCompletedCount} />
+          <span className="text-sm text-[var(--text-faint)]">/{totalHabitudes}</span>
         </p>
-        <p className="text-xs text-[var(--text-faint)] mb-3">aujourd'hui</p>
         <AnimatedProgressBar target={todayPercent} />
       </div>
     </div>
@@ -1158,7 +1160,7 @@ export default function Habits() {
 
   const renderRingsSection = (size = 84, stacked = false) => (
     <div
-      className={`bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 mb-10 flex gap-6 ${
+      className={`card-glass border border-[var(--border)] rounded-lg p-5 mb-10 flex gap-6 ${
         stacked ? 'flex-col' : 'items-center overflow-x-auto'
       }`}
     >
@@ -1419,7 +1421,7 @@ export default function Habits() {
                       )
                     })}
                     <td
-                      className={`px-3 py-1.5 text-center border-b border-[var(--border)] text-[var(--text-faint)] min-w-[70px] ${percentFont}`}
+                      className={`num px-3 py-1.5 text-center border-b border-[var(--border)] text-[var(--text-faint)] min-w-[70px] ${percentFont}`}
                     >
                       {stats.percent === null ? (
                         '—'
@@ -1791,13 +1793,13 @@ export default function Habits() {
       <h2 className="text-xl font-bold mb-4">Statistiques avancées</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
-          <p className="text-sm text-[var(--text-faint)] mb-2">🏆 Ton record</p>
-          <p className="text-2xl font-bold text-[var(--accent)]">{bestStreak} jours</p>
+        <div className="card-glass border border-[var(--border)] rounded-lg p-5">
+          <p className="kicker mb-2">🏆 Ton record</p>
+          <p className="num text-2xl font-bold text-[var(--accent)]">{bestStreak}<span className="text-sm text-[var(--text-faint)]"> jours</span></p>
         </div>
 
-        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
-          <p className="text-sm text-[var(--text-faint)] mb-3">Top habitudes du mois</p>
+        <div className="card-glass border border-[var(--border)] rounded-lg p-5">
+          <p className="kicker mb-3">Top habitudes du mois</p>
           <ul className="flex flex-col gap-1.5 text-sm">
             {topHabitudes.map((h) => (
               <li key={h.id} className="flex justify-between">
@@ -1811,8 +1813,8 @@ export default function Habits() {
         </div>
       </div>
 
-      <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 mb-4">
-        <p className="text-sm text-[var(--text-faint)] mb-2">Habitude la plus négligée</p>
+      <div className="card-glass border border-[var(--border)] rounded-lg p-5 mb-4">
+        <p className="kicker mb-2">Habitude la plus négligée</p>
         {mostNeglected && (
           <p className="text-base">
             {mostNeglected.emoji} {mostNeglected.nom} — {mostNeglected.count} fois ce mois
@@ -1821,9 +1823,9 @@ export default function Habits() {
       </div>
 
       {workTimeThisMonth.byProjet.length > 0 && (
-        <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
-          <p className="text-sm text-[var(--text-faint)] mb-1">Temps de travail ce mois</p>
-          <p className="text-2xl font-bold mb-4">
+        <div className="card-glass border border-[var(--border)] rounded-lg p-5">
+          <p className="kicker mb-1">Temps de travail ce mois</p>
+          <p className="num text-2xl font-bold mb-4">
             {formatDurationMinutes(workTimeThisMonth.totalMinutes)}
           </p>
           <div className="flex flex-col gap-3">
@@ -1851,8 +1853,8 @@ export default function Habits() {
   )
 
   const renderCategoryBreakdown = () => (
-    <div className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5">
-      <p className="text-sm text-[var(--text-faint)] mb-3">Répartition par catégorie</p>
+    <div className="card-glass border border-[var(--border)] rounded-lg p-5">
+      <p className="kicker mb-3">Répartition par catégorie</p>
       <div className="flex flex-col gap-3">
         {categoryBreakdown.map((row) => (
           <div key={row.categorie} className="flex items-center gap-3">
@@ -1863,7 +1865,7 @@ export default function Habits() {
                 style={{ width: `${row.percent}%` }}
               />
             </div>
-            <span className="text-xs text-[var(--text-faint)] w-10 text-right">{row.percent}%</span>
+            <span className="num text-xs text-[var(--text-faint)] w-10 text-right">{row.percent}%</span>
           </div>
         ))}
       </div>
@@ -1944,7 +1946,7 @@ export default function Habits() {
 
     return (
       <div
-        className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-8 py-10 flex flex-col items-center"
+        className="card-glass border border-[var(--border)] rounded-lg px-8 py-10 flex flex-col items-center"
         style={{ minHeight: '60vh' }}
       >
         <span style={{ fontSize: 48, lineHeight: 1 }}>{h.emoji}</span>

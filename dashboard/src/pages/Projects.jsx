@@ -133,7 +133,7 @@ export default function Projects() {
                 key={p.id}
                 onClick={() => navigate(`/projects/${p.id}`)}
                 style={{ '--d': `${i * 60}ms` }}
-                className="anim-fade-up card-hover bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 cursor-pointer hover:border-[var(--border-strong)]"
+                className="anim-fade-up card-hover card-glass border border-[var(--border)] rounded-lg p-5 cursor-pointer hover:border-[var(--border-strong)]"
               >
                 <span
                   className="w-3 h-3 rounded-full inline-block mb-3"

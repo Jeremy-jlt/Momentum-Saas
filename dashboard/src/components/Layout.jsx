@@ -34,7 +34,7 @@ export default function Layout() {
 
       {user && <Onboarding />}
 
-      <header className="relative z-10 border-b-[0.5px] border-[var(--border-faint)]">
+      <header className="header-glass border-b-[0.5px] border-[var(--border-faint)]">
         <div className="max-w-6xl mx-auto px-6 h-12 flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="w-[5px] h-[5px] rounded-full bg-[var(--accent)]" />

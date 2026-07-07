@@ -491,7 +491,7 @@ export default function HabitManager() {
         </SortableContext>
       </DndContext>
 
-      <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-4 mb-6">
+      <div className="card-glass border border-[var(--border)] rounded-lg p-4 mb-6">
         <p className="text-xs text-[var(--text-faint)] mb-3">Ajouter une habitude</p>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative shrink-0">
