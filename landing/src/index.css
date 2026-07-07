@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+:root {
+  --accent: #10b981;
+  --accent-rgb: 16, 185, 129;
+  --bg: #060608;
+  --bg-2: #0d0d10;
+  --border: rgba(255, 255, 255, 0.06);
+  --text: #f0f0f5;
+  --text-muted: #6b7280;
+  --text-subtle: #374151;
+  --font: "Syne", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  overflow-x: hidden;
+}
+
+/* ——— Keyframes globaux ——— */
+
+@keyframes navbar-slide-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes word-drop {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cta-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scroll-line-pulse {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes cta-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes draw-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Boucle "invasion d'apps -> blocage Momentum" de la Section 4, cycle unique
+   partagé (5s) pour que les icônes, la barre de blocage et le label restent
+   parfaitement synchronisés à chaque répétition. */
+@keyframes icon-cycle {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  85%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@keyframes block-cycle {
+  0%,
+  55% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  75%,
+  92% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+@keyframes label-cycle {
+  0%,
+  65% {
+    opacity: 0;
+  }
+  80%,
+  92% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Bento grid asymétrique de la Section 5 (aires nommées). */
+@media (min-width: 768px) {
+  .bento-grid {
+    grid-template-areas: "a a b" "c d d";
+  }
+  .bento-a {
+    grid-area: a;
+  }
+  .bento-b {
+    grid-area: b;
+  }
+  .bento-c {
+    grid-area: c;
+  }
+  .bento-d {
+    grid-area: d;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

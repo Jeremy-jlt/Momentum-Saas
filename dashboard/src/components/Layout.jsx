@@ -59,7 +59,7 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-[var(--surface-0)] text-[var(--text-strong)]">
       {/* Fond animé plein écran, derrière tout le contenu (header et footer
           compris) — aucune délimitation visible. */}
-      <BeamsBackground fixed intensity="subtle" />
+      <BeamsBackground fixed />
       <DailyProgressBar />
 
       {user && <Onboarding />}

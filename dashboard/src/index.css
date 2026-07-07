@@ -354,14 +354,22 @@ html {
   max-width: 900px;
   max-height: 900px;
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.18), transparent 62%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 18%, transparent),
+    transparent 62%
+  );
   filter: blur(40px);
   pointer-events: none;
   animation: ambient-drift 18s ease-in-out infinite alternate;
 }
 
-[data-theme='light'] .ambient-glow {
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.12), transparent 62%);
+[data-theme='ivory'] .ambient-glow {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    transparent 62%
+  );
 }
 
 /* ——— Design v2 ——— */
