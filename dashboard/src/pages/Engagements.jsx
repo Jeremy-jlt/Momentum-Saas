@@ -14,20 +14,27 @@ export default function Engagements() {
   const [engagements, setEngagements] = useState([])
   const [loading, setLoading] = useState(true)
 
-  const fetchEngagements = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('engagements')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (!error) setEngagements(data ?? [])
-    setLoading(false)
-  }
-
   useEffect(() => {
-    if (user) fetchEngagements()
+    if (!user) return
+    let cancelled = false
+
+    async function fetchEngagements() {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('engagements')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (cancelled) return
+      if (!error) setEngagements(data ?? [])
+      setLoading(false)
+    }
+
+    fetchEngagements()
+    return () => {
+      cancelled = true
+    }
   }, [user])
 
   const handleDelete = async (id) => {
@@ -67,12 +74,13 @@ export default function Engagements() {
       <h1 className="text-3xl font-bold mb-8">Mes engagements</h1>
 
       <div className="flex flex-col gap-4">
-        {engagements.map((eng) => {
+        {engagements.map((eng, i) => {
           const status = STATUS_STYLES[eng.statut] ?? STATUS_STYLES.en_cours
           return (
             <div
               key={eng.id}
-              className="border border-[var(--border)] rounded-lg p-5 flex flex-col gap-3"
+              style={{ '--d': `${i * 60}ms` }}
+              className="anim-fade-up bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-5 flex flex-col gap-3"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>

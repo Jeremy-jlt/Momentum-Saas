@@ -26,6 +26,7 @@ import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { enqueueOfflineAction } from '../utils/offlineQueue'
 import { useToast } from '../components/Toast'
+import { useIsPro } from '../hooks/useIsPro'
 
 const STREAK_THRESHOLD = 0.8
 const MAX_STREAK_LOOKBACK_DAYS = 3650
@@ -424,8 +425,7 @@ export default function Habits() {
   const todayISO = toISODate(today)
   const isOnline = useOnlineStatus()
 
-  // Simule l'état Pro en attendant l'intégration Stripe.
-  const isPro = true
+  const isPro = useIsPro()
 
   const [habitudes, setHabitudes] = useState([])
   const [completions, setCompletions] = useState([])
@@ -1252,7 +1252,7 @@ export default function Habits() {
           </button>
         </div>
 
-        <div className="overflow-x-auto mb-12 border border-[var(--border)] rounded-lg">
+        <div className="overflow-x-auto mb-12 bg-[var(--surface-0)] border border-[var(--border)] rounded-lg">
           <table className={`${tableFont} border-collapse`}>
             <thead>
               <tr>
@@ -1717,7 +1717,7 @@ export default function Habits() {
           : 'opacity-100'
 
     return (
-      <div className="border border-[var(--border)] rounded-lg p-4 mb-12">
+      <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-4 mb-12">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <p className="text-sm text-[var(--text-muted)]">
             {CHART_TYPE_TITLES[displayedChartType] || 'Progression sur 30 jours'}

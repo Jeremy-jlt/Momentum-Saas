@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { supabase } from '../supabaseClient'
 import Modal from '../components/Modal'
+import { useIsPro } from '../hooks/useIsPro'
 
 const FREE_FEATURES = [
   'Jusqu\'à 5 habitudes actives',
@@ -26,8 +27,7 @@ export default function Profile() {
   const { user } = useAuth()
   const { theme, setTheme } = useTheme()
 
-  // Simule l'état Pro en attendant l'intégration Stripe.
-  const isPro = true
+  const isPro = useIsPro()
 
   const [resetSent, setResetSent] = useState(false)
   const [resetError, setResetError] = useState('')
@@ -91,7 +91,7 @@ export default function Profile() {
       {/* Informations du compte */}
       <section className="mb-10">
         <h2 className="text-lg font-bold mb-4">Informations du compte</h2>
-        <div className="border border-[var(--border)] rounded-lg p-5">
+        <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-5">
           <p className="text-xs text-[var(--text-faint)] mb-1">Email</p>
           <p className="text-sm text-[var(--text-muted)] mb-4">{user?.email}</p>
 
@@ -113,7 +113,7 @@ export default function Profile() {
       {/* Apparence */}
       <section className="mb-10">
         <h2 className="text-lg font-bold mb-4">Apparence</h2>
-        <div className="border border-[var(--border)] rounded-lg p-5">
+        <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-5">
           <p className="text-xs text-[var(--text-faint)] mb-3">Thème de l'interface</p>
           <div className="inline-flex rounded-md border border-[var(--border)] overflow-hidden">
             {[
@@ -139,7 +139,7 @@ export default function Profile() {
       {/* Abonnement */}
       <section className="mb-10">
         <h2 className="text-lg font-bold mb-4">Abonnement</h2>
-        <div className="border border-[var(--border)] rounded-lg p-5">
+        <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-5">
           <span
             className={`inline-block text-xs font-bold rounded-full px-3 py-1 mb-4 ${
               isPro ? 'bg-[var(--accent)] text-[var(--accent-contrast)]' : 'bg-[var(--surface-3)] text-[var(--text-muted)]'
@@ -168,7 +168,7 @@ export default function Profile() {
       {/* Données */}
       <section>
         <h2 className="text-lg font-bold mb-4">Données</h2>
-        <div className="border border-[var(--border)] rounded-lg p-5 flex flex-col gap-3">
+        <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-5 flex flex-col gap-3">
           <button
             onClick={handleExport}
             className="border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-strong)] transition-colors rounded-md px-4 py-2 text-sm self-start"

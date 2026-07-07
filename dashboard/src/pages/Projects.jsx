@@ -124,7 +124,7 @@ export default function Projects() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {projets.map((p) => {
+          {projets.map((p, i) => {
             const stats = statsByProjet.get(p.id) || { count: 0, totalMinutes: 0, lastDate: null }
             const habitude = p.habitude_id ? habitudeById.get(p.habitude_id) : null
 
@@ -132,7 +132,8 @@ export default function Projects() {
               <div
                 key={p.id}
                 onClick={() => navigate(`/projects/${p.id}`)}
-                className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 cursor-pointer hover:border-[var(--border-strong)] transition-colors"
+                style={{ '--d': `${i * 60}ms` }}
+                className="anim-fade-up card-hover bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 cursor-pointer hover:border-[var(--border-strong)]"
               >
                 <span
                   className="w-3 h-3 rounded-full inline-block mb-3"

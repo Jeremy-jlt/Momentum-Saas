@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import Onboarding from './Onboarding'
+import BeamsBackground from './BeamsBackground'
 
 export default function Layout() {
   const { user, signOut } = useAuth()
@@ -27,9 +28,13 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--surface-0)] text-[var(--text-strong)]">
+      {/* Fond animé plein écran, derrière tout le contenu (header et footer
+          compris) — aucune délimitation visible. */}
+      <BeamsBackground fixed intensity="subtle" />
+
       {user && <Onboarding />}
 
-      <header className="bg-[var(--surface-0)] border-b-[0.5px] border-[var(--border-faint)]">
+      <header className="relative z-10 border-b-[0.5px] border-[var(--border-faint)]">
         <div className="max-w-6xl mx-auto px-6 h-12 flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <span className="w-[5px] h-[5px] rounded-full bg-[var(--accent)]" />
@@ -142,11 +147,11 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="flex-1">
+      <main className="relative z-10 flex-1">
         <Outlet />
       </main>
 
-      <footer className="border-t border-[var(--border)]">
+      <footer className="relative z-10 border-t border-[var(--border)]">
         <div className="max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-xs text-[var(--text-faint)]">
           <span>© 2026 Momentum</span>
           <div className="flex items-center gap-4">

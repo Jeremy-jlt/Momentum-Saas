@@ -224,7 +224,7 @@ export default function ProjectDetail() {
         </Modal>
       )}
 
-      <div className="border border-[var(--border)] rounded-lg p-4 mb-10">
+      <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-4 mb-10">
         <p className="text-sm text-[var(--text-muted)] mb-4">Activité sur 30 jours</p>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
@@ -256,7 +256,7 @@ export default function ProjectDetail() {
         <>
           <div className="flex flex-col gap-3">
             {sessions.slice(0, visibleCount).map((s) => (
-              <div key={s.id} className="border border-[var(--border)] rounded-lg p-4">
+              <div key={s.id} className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-4">
                 <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
                   <span className="text-xs text-[var(--text-faint)]">
                     {formatSessionDateTime(s.date, s.heure_debut, s.heure_fin)}

@@ -88,7 +88,7 @@ export default function NewCommitment() {
         <h1 className="text-2xl font-bold mb-2">Engagement créé</h1>
         <p className="text-[var(--text-faint)] mb-8">« {created.nom} » est maintenant en cours.</p>
 
-        <div className="text-left border border-[var(--border)] rounded-lg p-6 mb-8 text-sm space-y-2">
+        <div className="text-left bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-6 mb-8 text-sm space-y-2">
           <p>
             <span className="text-[var(--text-faint)]">Sites bloqués : </span>
             {created.sites_bloques.join(', ')}

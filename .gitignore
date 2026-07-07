@@ -1,0 +1,8 @@
+# Outillage local Claude Code (skills, config de session) — non versionné.
+# Pour partager les skills via le repo, retirer cette ligne et commiter .claude/skills.
+.claude/
+
+# Secrets — jamais dans le repo, quel que soit le dossier.
+.env
+.env.*
+!.env.example

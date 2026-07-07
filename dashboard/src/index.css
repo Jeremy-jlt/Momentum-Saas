@@ -240,3 +240,77 @@ html {
     transform: scale(1);
   }
 }
+
+/* Entrée douce des blocs de contenu (cartes, sections, hero).
+   Décalage en cascade via --d : style={{ '--d': '120ms' }}. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-fade-up {
+  animation: fade-in-up 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Nappe lumineuse ambiante : grand halo émeraude flouté qui dérive très
+   lentement en boucle (aller-retour ~26s). Utilisé par BeamsBackground pour
+   que le fond respire en permanence, pas seulement à l'arrivée. */
+@keyframes ambient-drift {
+  from {
+    transform: translate(-8%, -4%) scale(1);
+  }
+  to {
+    transform: translate(12%, 8%) scale(1.2);
+  }
+}
+
+.ambient-glow {
+  position: absolute;
+  width: 55vw;
+  height: 55vw;
+  max-width: 900px;
+  max-height: 900px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.18), transparent 62%);
+  filter: blur(40px);
+  pointer-events: none;
+  animation: ambient-drift 18s ease-in-out infinite alternate;
+}
+
+[data-theme='light'] .ambient-glow {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.12), transparent 62%);
+}
+
+/* Survol de carte : légère élévation + ombre ultra-diffuse. */
+.card-hover {
+  transition:
+    transform 200ms ease-out,
+    border-color 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-up {
+    animation: none;
+  }
+
+  .card-hover:hover {
+    transform: none;
+  }
+
+  .ambient-glow {
+    animation: none;
+  }
+}

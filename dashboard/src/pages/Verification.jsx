@@ -206,7 +206,7 @@ export default function Verification() {
         </p>
       </div>
 
-      <div className="inline-flex items-center gap-2 border border-[var(--border)] rounded-full px-4 py-2 text-xs text-[var(--text-faint)]">
+      <div className="inline-flex items-center gap-2 bg-[var(--surface-0)] border border-[var(--border)] rounded-full px-4 py-2 text-xs text-[var(--text-faint)]">
         <span
           className={`w-2 h-2 rounded-full ${
             statut === 'en_attente' ? 'bg-[var(--accent)] animate-pulse' : 'bg-[var(--text-subtle)]'

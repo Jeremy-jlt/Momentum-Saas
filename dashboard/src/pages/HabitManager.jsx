@@ -21,6 +21,7 @@ import Modal from '../components/Modal'
 import OfflineBanner from '../components/OfflineBanner'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { useToast } from '../components/Toast'
+import { useIsPro } from '../hooks/useIsPro'
 
 const DEFAULT_OBJECTIF_JOURS = 30
 
@@ -111,8 +112,7 @@ export default function HabitManager() {
   const isOnline = useOnlineStatus()
   const showToast = useToast()
 
-  // Simule l'état Pro en attendant l'intégration Stripe.
-  const isPro = true
+  const isPro = useIsPro()
 
   const [habitudes, setHabitudes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -182,22 +182,13 @@ export default function HabitManager() {
     updateHabitude(h.id, { actif: !h.actif })
   }
 
-  const handleDragStart = (event) => {
-    console.log('[dnd-kit] drag start', event.active.id)
-  }
-
   const handleDragEnd = async (event) => {
     const { active, over } = event
-    console.log('[dnd-kit] drag end', { active: active?.id, over: over?.id })
 
-    if (!over || active.id === over.id) {
-      console.log('[dnd-kit] no reorder needed (dropped on itself or outside a valid target)')
-      return
-    }
+    if (!over || active.id === over.id) return
 
     const oldIndex = habitudes.findIndex((h) => h.id === active.id)
     const newIndex = habitudes.findIndex((h) => h.id === over.id)
-    console.log('[dnd-kit] reordering', { oldIndex, newIndex })
 
     const reordered = arrayMove(habitudes, oldIndex, newIndex).map((h, i) => ({
       ...h,
@@ -382,7 +373,6 @@ export default function HabitManager() {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={habitudes.map((h) => h.id)} strategy={verticalListSortingStrategy}>
@@ -501,7 +491,7 @@ export default function HabitManager() {
         </SortableContext>
       </DndContext>
 
-      <div className="border border-[var(--border)] rounded-lg p-4 mb-6">
+      <div className="bg-[var(--surface-0)] border border-[var(--border)] rounded-lg p-4 mb-6">
         <p className="text-xs text-[var(--text-faint)] mb-3">Ajouter une habitude</p>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative shrink-0">

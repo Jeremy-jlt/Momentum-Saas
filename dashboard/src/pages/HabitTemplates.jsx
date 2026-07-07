@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../supabaseClient'
 import { HABIT_TEMPLATES } from '../data/habitTemplates'
 import { FREE_HABIT_LIMIT } from '../data/habitOptions'
+import { useIsPro } from '../hooks/useIsPro'
 
 export default function HabitTemplates() {
   const { user } = useAuth()
@@ -11,8 +12,7 @@ export default function HabitTemplates() {
   const [searchParams] = useSearchParams()
   const isAddMode = searchParams.get('mode') === 'add'
 
-  // Simule l'état Pro en attendant l'intégration Stripe.
-  const isPro = true
+  const isPro = useIsPro()
 
   const [existingHabitudes, setExistingHabitudes] = useState([])
   const [creating, setCreating] = useState(null)
@@ -94,7 +94,7 @@ export default function HabitTemplates() {
       {error && <p className="text-[var(--danger)] text-sm mb-6">{error}</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {HABIT_TEMPLATES.map((template) => {
+        {HABIT_TEMPLATES.map((template, i) => {
           const isProTemplate = template.tier === 'pro'
           const locked = isProTemplate && !isPro
           const isCreating = creating === template.id
@@ -102,7 +102,8 @@ export default function HabitTemplates() {
           return (
             <div
               key={template.id}
-              className="relative bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 flex flex-col"
+              style={{ '--d': `${i * 60}ms` }}
+              className="anim-fade-up card-hover relative bg-[var(--surface-2)] border border-[var(--border)] rounded-lg p-5 flex flex-col"
             >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-3xl">{template.emoji}</span>

@@ -37,7 +37,7 @@ export default function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-[80vh] px-4">
-      <div className="w-full max-w-sm">
+      <div className="anim-fade-up w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8 justify-center">
           <span className="w-2 h-2 rounded-full bg-[var(--accent)]" />
           <span className="font-bold tracking-widest text-sm text-[var(--text-strong)]">MOMENTUM</span>

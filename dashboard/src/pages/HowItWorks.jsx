@@ -26,7 +26,7 @@ export default function HowItWorks() {
 
       <div className="flex flex-col gap-8 mb-12">
         {STEPS.map((step, i) => (
-          <div key={step.title} className="flex gap-5">
+          <div key={step.title} className="anim-fade-up flex gap-5" style={{ '--d': `${i * 90}ms` }}>
             <div className="shrink-0 w-9 h-9 rounded-full border border-[var(--border)] flex items-center justify-center text-sm font-bold text-[var(--text-muted)]">
               {i + 1}
             </div>
